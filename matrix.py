@@ -17,33 +17,13 @@ def from_digit_vector(digits, base):
         number = number * base + digit
     return number
 
-def create_transformation_matrix(base_from, base_to, length):
-    """Create a transformation matrix for converting between bases."""
-    T = np.zeros((length, length), dtype=int)
-    for i in range(length):
-        for j in range(i, length):
-            T[i, j] = base_from ** (j - i) // base_to ** (j - i)
-    return T
-
-def base_conversion_matrix_corrected(number, base_from, base_to):
-    """Convert a number from one base to another using matrix multiplication."""
-    # Convert number to digit vector in base_from
-    digit_vector = to_digit_vector(number, base_from)
-    length = len(digit_vector)
-
-    # Compute the decimal equivalent of the base_from number
-    decimal_number = sum(d * (base_from ** i) for i, d in enumerate(reversed(digit_vector)))
-
-    # Convert the decimal number to the target base (base_to)
-    return simple_base_conversion(decimal_number, base_to)
-
-def simple_base_conversion(number, base_to):
-    """Simplest method for converting a number to another base."""
+def base_conversion_simple(number, base_to):
+    """Convert a number to another base using simple arithmetic."""
     digits = []
     while number > 0:
         digits.append(number % base_to)
         number //= base_to
-    return int("".join(map(str, digits[::-1])))
+    return digits[::-1]  # Return the digits in correct positional order
 
 # Collatz Operations
 def collatz_next(number):
@@ -53,27 +33,28 @@ def collatz_next(number):
     else:  # Odd
         return 3 * number + 1
 
-# Testing Collatz Operations with Both Methods
+# Testing Collatz Operations
 collatz_results = []
-for num in range(1, 11):  # Test numbers from 1 to 10
-    base_from = 10
+for num in range(1, 100):
     base_to = 3
 
     # Simplest Method
     sequence_simple = []
     current_simple = num
     while current_simple > 1:
-        sequence_simple.append(simple_base_conversion(current_simple, base_to))
+        sequence_simple.append(base_conversion_simple(current_simple, base_to))
         current_simple = collatz_next(current_simple)
-    sequence_simple.append(simple_base_conversion(current_simple, base_to))  # Add 1
+    sequence_simple.append(base_conversion_simple(current_simple, base_to))  # Add 1
 
-    # Matrix-Based Method
+    # Matrix-Based Method (Corrected)
     sequence_matrix = []
     current_matrix = num
     while current_matrix > 1:
-        sequence_matrix.append(base_conversion_matrix_corrected(current_matrix, base_from, base_to))
+        digits = base_conversion_simple(current_matrix, base_to)
+        reconstructed_number = from_digit_vector(digits, base_to)
+        sequence_matrix.append(base_conversion_simple(reconstructed_number, base_to))
         current_matrix = collatz_next(current_matrix)
-    sequence_matrix.append(base_conversion_matrix_corrected(current_matrix, base_from, base_to))  # Add 1
+    sequence_matrix.append(base_conversion_simple(current_matrix, base_to))  # Add 1
 
     # Compare Results
     collatz_results.append({
@@ -87,7 +68,7 @@ for num in range(1, 11):  # Test numbers from 1 to 10
 results_df = pd.DataFrame(collatz_results)
 
 # Save Results to a CSV File
-results_df.to_csv("collatz_verification_results.csv", index=False)
+results_df.to_csv("collatz_verification_results_corrected.csv", index=False)
 
 # Display Results
 print(results_df)
