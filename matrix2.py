@@ -43,6 +43,18 @@ def from_digit_vector(digits, base):
         number = number * base + digit
     return number
 
+def propagate_carries(digits, base):
+    """Propagate carries in a digit vector."""
+    outdigits = []
+    carry = 0
+    print("digits", digits)
+    for digit in reversed(digits):
+        print("digit", digit, "carry", carry)
+        current = digit + carry
+        outdigits += [current % base]
+        carry = current // base
+    return outdigits
+
 def matrix(N):
     ternary = to_digit_vector(N, 3)[::-1]
     p = len(ternary)
@@ -55,10 +67,14 @@ def matrix(N):
     binary_matrix = np.transpose(binary_matrix)
     binary = np.dot(binary_matrix, ternary)
 
+    #N2 = from_digit_vector(binary, 2)
+    binary = propagate_carries(binary, 2)
     N2 = from_digit_vector(binary, 2)
-    sbin = ''.join(str(bit) for bit in binary)
-    print("ternary", ternary, "N", N, "N2", N2, "bin", sbin, "should be", bin(N2)[2:])
+    sbin = ''.join(str(bit) for bit in binary).lstrip("0")
+    should_be = bin(N2)[2:].lstrip("0")
+    match = sbin == should_be
+    print("ternary", ternary, "N", N, "N2", N2, "match", match, "bin", sbin, "should be", should_be)
     print("")
-    
+
 for i in range(1, 128+1):
     matrix(i)
