@@ -83,13 +83,11 @@ for num in range(1, 11):  # Test numbers from 1 to 10
         "Match": sequence_simple == sequence_matrix
     })
 
-# Display Results
+# Convert Results to DataFrame
 results_df = pd.DataFrame(collatz_results)
-#import ace_tools as tools; tools.display_dataframe_to_user(name="Collatz Sequence Verification Results", dataframe=results_df)
 
-# Create and display the DataFrame
-#results_df = pd.DataFrame(results)
+# Save Results to a CSV File
+results_df.to_csv("collatz_verification_results.csv", index=False)
+
+# Display Results
 print(results_df)
-
-# Optionally save it to a CSV file
-#results_df.to_csv("base_conversion_comparison.csv", index=False)
