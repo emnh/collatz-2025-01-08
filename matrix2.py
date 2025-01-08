@@ -53,6 +53,8 @@ def propagate_carries(digits, base):
         current = digit + carry
         outdigits += [current % base]
         carry = current // base
+    if carry > 0:
+        outdigits += [carry]
     return outdigits
 
 def matrix(N):
