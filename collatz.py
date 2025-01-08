@@ -78,14 +78,22 @@ def shortcut_collatz_cycle_length(n):
 
 def test_shortcut_vs_classical(max_n):
     """Compare the shortcut-based and classical methods for Collatz cycle length."""
+    maxloop_classic, maxloop_shortcut = 0, 0
     for n in range(1, max_n + 1):
         shortcut_length, short_iters = shortcut_collatz_cycle_length(n)
         classical_length  = classical_collatz_cycle_length(n)
+        a, b = maxloop_classic, maxloop_shortcut
+        maxloop_classic = max(maxloop_classic, classical_length)
+        maxloop_shortcut = max(maxloop_shortcut, short_iters)
+        if a != maxloop_classic:
+            print(f"N: {n}, Classic: {a} -> {maxloop_classic}")
+        if b != maxloop_shortcut:
+            print(f"N: {n}, Shortcut: {b} -> {maxloop_shortcut}")
         if shortcut_length != classical_length:
             print(f"Mismatch for n = {n}: Shortcut = {shortcut_length}, Classical = {classical_length}")
         else:
             diff = classical_length - short_iters
-            print(f"Match for n = {n}: Length = {shortcut_length}, Saved: {diff}, Loops {short_iters}")
-
+            #print(f"Match for n = {n}: Length = {shortcut_length}, Saved: {diff}, Loops {short_iters}")
+        #print(f"Classic: {maxloop_classic} vs {maxloop_shortcut})
 # Run the cleaned-up version
-test_shortcut_vs_classical(30)
+test_shortcut_vs_classical(2**20)
