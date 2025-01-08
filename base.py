@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from collatz import classical_collatz_cycle_length, truncate_and_count_zeroes, truncate_and_count_ones, shortcut_collatz_cycle_length_gen
 
 def powers_of_3_to_binary(max_power):
@@ -63,19 +65,50 @@ def isEven(digits_ternary):
     sd = sum(int(x) for x in digits_ternary)
     return sd % 2 == 0
 
-# Precompute tables
-powers_3_to_bin = powers_of_3_to_binary(1000)
-powers_2_to_tern = powers_of_2_to_ternary(1000)
+class LazyTable:
+    def __init__(self, compute_func):
+        """Initialize a lazy table with a computation function."""
+        self.table = {}
+        self.compute_func = compute_func
+
+    def __getitem__(self, key):
+        """Get an item, computing it if necessary."""
+        if key not in self.table:
+            self.table[key] = self.compute_func(key)
+        return self.table[key]
+
+    def get(self, key, default=None):
+        """Get an item, returning a default value if not found."""
+        if key in self.table:
+            return self.table[key]
+        try:
+            value = self.__getitem__(key)
+            return value
+        except KeyError:
+            return default
+
+def powers_of_3_to_binary_lazy():
+    """Lazily compute powers of 3 mapped to binary."""
+    return LazyTable(lambda k: bin(3**k)[2:])
+
+def powers_of_2_to_ternary_lazy():
+    """Lazily compute powers of 2 mapped to ternary."""
+    return LazyTable(lambda m: to_ternary(2**m))
+
+# Use the LazyTable for both tables
+powers_3_to_bin = powers_of_3_to_binary_lazy()
+powers_2_to_tern = powers_of_2_to_ternary_lazy()
 
 # Example input: ternary number
 for i in range(1, 100):
     #ternary_num = "2101"  # Base-3 representation
     result = to_ternary(i)
     while int(result, 3) > 1:
+        print("N1: ", result)
         print("N3: ", result)
         while not isEven(result):
             result = result + "1"
-            print("N3 mul: ", result)
+            print("N3 mul: ", result, int(result, 3))
         result = shift_and_reconstruct(powers_3_to_bin, powers_2_to_tern, result)
         print(f"N3 div: {result}")
     print("")
