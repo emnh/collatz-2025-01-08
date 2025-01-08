@@ -222,15 +222,16 @@ def collatz_to_graphviz(sequences, output_file="collatz_graph"):
     graph.render(filename=output_file, cleanup=True)
     print(f"Graph saved to {output_file}.png")
 
-# Example Usage
-collatz_sequences = []
-for i in range(1, 2**8):
-    collatz_sequences.append(list(shortcut_collatz_cycle_length_gen(i))[:-2])
-collatz_to_graphviz(collatz_sequences)
+if __name__ == "__main__":
+    # Example Usage
+    collatz_sequences = []
+    for i in range(1, 2**8):
+        collatz_sequences.append(list(shortcut_collatz_cycle_length_gen(i))[:-2])
+    collatz_to_graphviz(collatz_sequences)
 
-# Specify the maximum bit length you want to analyze
-max_bit_length = 20  # Change this as needed
-max_collatz_by_length(max_bit_length)
+    # Specify the maximum bit length you want to analyze
+    max_bit_length = 20  # Change this as needed
+    max_collatz_by_length(max_bit_length)
 
-# Run the cleaned-up version
-#test_shortcut_vs_classical(2**20)
+    # Run the cleaned-up version
+    #test_shortcut_vs_classical(2**20)
