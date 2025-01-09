@@ -5,7 +5,7 @@ def collatz_cycle_length(n):
     Compute the cycle length of a number n under the Collatz function.
     """
     count = 0
-    while n != 1:
+    while n > 1:
         if n % 2 == 0:
             n //= 2
         else:
@@ -38,17 +38,28 @@ def collatz_cycle_length_aux_test_gen(n, aux):
     """
     count = 0
     divs = 0
-    while n != 1:
+    maxCount = 10000
+    n_orig = N
+    aux_orig = aux
+    assert isinstance(n, int)
+    #print("n", n, type(n))
+    clen = collatz_cycle_length(n)
+    while n > 1:
         yield (n, aux, divs)
         if n % 2 == 0:
             #assert aux % 2 == 0
             aux //= 2
             n //= 2
+            #n = n // 2
             divs += 1
         else:
             aux *= 3
             n = 3 * n + 1
         count += 1
+        #if count >= nlen:
+        #print("err maxCount", count, "n", n, "aux", aux, "n_orig", n_orig, "aux_orig", aux_orig, clen)
+        #if count >= maxCount:
+        #    assert False
     yield (n, aux, divs)
 
 
@@ -222,9 +233,13 @@ def test_all(n):
 
 def rightZeroes(x):
     n = 0
+    maxN = 1000
     while x > 1 and x % 2 == 0:
         n += 1
         x //= 2
+        if n >= maxN:
+            print("fail rightZeroes", n, x)
+            assert False
     return n
 
 for N in range(1, 2**8):
@@ -232,20 +247,30 @@ for N in range(1, 2**8):
     if N <= 1:
         continue
     N_clen = collatz_cycle_length(N)
-    for cutlen in range(1, len(N_bin)):
+    for cutlen in range(2, len(N_bin) - 1):
         left_bin, right_bin = N_bin[:cutlen], N_bin[cutlen:]
         left = int(left_bin, 2)
         right = int(right_bin, 2)
         #print(left_bin, right_bin, N_bin)
+        assert len(left_bin) > 1
+        assert len(right_bin) > 1
         assert left_bin + right_bin == N_bin
+        assert len(left_bin) + len(right_bin) == len(N_bin)
         pad_count = len(right_bin)
         padding = 2 ** pad_count
         left_padded = left * padding
+        #zeroes = rightZeroes(left_padded) + 1
+        #zeroes = 
+        #check = bin(left_padded)[2:][:-zeroes] + right_bin == N_bin
+        #if not check:
+        #    print(left_padded, bin(left_padded)[2:][:-zeroes], right_bin, N_bin)
+        #    assert check
         vals = list(collatz_cycle_length_aux_test_gen(right, left_padded))
         
         last = vals[-1]
         last_aux = last[1]
         counter = 0
+        print("len(vals)", len(vals))
         for val in vals:
             val_N, val_aux, val_divs = val
             val_divs_2 = 2 ** val_divs
