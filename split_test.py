@@ -397,10 +397,7 @@ def testSome():
         #x_mark = ""
         #if r > 0 and r < len(s):
         #x_mark = prefix + "x" + suffix
-        x_mark = []
-        for i, c in enumerate(suffix):
-            x_mark.append(c)
-
+        
         x_mark = suffix_marked
         rs = len(num1) - r
         if r > i:
