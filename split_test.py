@@ -12,6 +12,7 @@ def collatz_step_bit(n):
         n //= 2
         bit = 0
     else:
+        #on_bits = bin(3 * n)[2:][::-1]
         on_bits = bin(3 * n)[2:][::-1]
         n = 3 * n + 1
         n_bits = bin(n)[2:][::-1]
@@ -347,9 +348,8 @@ def shortcut(n):
 def reach(n):
     s = 0
     while n > 1:
-        n = collatz_step(n)
-        nbin = bin(n)[2:]
-        s = max(s, len(nbin))
+        n, bit = collatz_step_bit(n)
+        s = max(s, bit)
     return s
 
 def pc(inum2, steps, rj, shortfun=lambda x: (x, 0, "")):
@@ -388,13 +388,20 @@ def testSome():
     #snum1, _ = shortcut(inum1)
     pc(inum1, steps, rj, shortcut)
     print("")
-    for i in reversed(range(len(num1))):
+    for i in reversed(range(1, len(num1))):
         prefix = num1[:i]
-        suffix = num1[i:]
+        suffix = "1" + ("0" * (i - 1)) + num1[i:]
+        suffix_marked = suffix[:i] + "x" + suffix[i:] 
+        assert len(suffix) == len(num1)
         r = reach(int(suffix, 2))
         #x_mark = ""
         #if r > 0 and r < len(s):
-        x_mark = prefix + "x" + suffix
+        #x_mark = prefix + "x" + suffix
+        x_mark = []
+        for i, c in enumerate(suffix):
+            x_mark.append(c)
+
+        x_mark = suffix_marked
         rs = len(num1) - r
         if r > i:
             rs += 1
