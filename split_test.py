@@ -355,6 +355,11 @@ def pc(inum2, steps, rj, shortfun=lambda x: (x, 0, "")):
             inum2, bit = collatz_step_bit(inum2)
             clen += 1
         num2 = bin(inum2)[2:]
+        marker = "x"
+        if bit > 0:
+            num2 = num2[:-bit] + marker + num2[-bit:]
+        else:
+            num2 += marker
         print("num2", num2.rjust(rj), str(clen).rjust(3), bit, shortcutNumber)
     
 def testSome():
