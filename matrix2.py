@@ -34,8 +34,8 @@ def to_digit_vector(number, base):
     while number > 0:
         digits.append(number % base)
         number //= base
-    return np.array(digits)
-    #return np.array(digits[::-1])  # Reverse to maintain correct positional order
+    #return np.array(digits)
+    return np.array(digits[::-1])  # Reverse to maintain correct positional order
 
 def from_digit_vector(digits, base):
     """Convert a digit vector back to a number in the given base."""
@@ -101,8 +101,14 @@ def collatz_matrix(N):
     #print(ternary)
     sequence = []
     print("prewhile", ternary, from_digit_vector(ternary, 3))
+    trail = {}
     while from_digit_vector(ternary, 3) > 1:
         #print("While", from_digit_vector(ternary[::-1], 3))
+        ternary_str = ''.join(str(bit) for bit in ternary).lstrip("0")
+        if ternary_str in trail:
+            print("Cycle", from_digit_vector(ternary, 3), "trail", trail)
+            break
+        trail[ternary_str] = True
         p = len(ternary)
         binary_matrix = generate_binary_matrix(p)
         # Display the matrix
