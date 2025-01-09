@@ -344,6 +344,14 @@ def shortcut(n):
 
     return n, cycle_length, shortcut
 
+def reach(n):
+    s = 0
+    while n > 1:
+        n = collatz_step(n)
+        nbin = bin(n)[2:]
+        s = max(s, len(nbin))
+    return s
+
 def pc(inum2, steps, rj, shortfun=lambda x: (x, 0, "")):
     clen = 0
     for i in range(steps):
@@ -379,6 +387,20 @@ def testSome():
     print("")
     #snum1, _ = shortcut(inum1)
     pc(inum1, steps, rj, shortcut)
+    print("")
+    for i in reversed(range(len(num1))):
+        prefix = num1[:i]
+        suffix = num1[i:]
+        r = reach(int(suffix, 2))
+        #x_mark = ""
+        #if r > 0 and r < len(s):
+        x_mark = prefix + "x" + suffix
+        rs = len(num1) - r
+        if r > i:
+            rs += 1
+        y_mark = x_mark[:rs] + "y" + x_mark[rs:]
+        #print(str(r).rjust(4), x_mark.rjust(rj), y_mark.rjust(rj))
+        print(str(r).rjust(4), y_mark.rjust(rj))
     # For two numbers a, b where b = collatz_step(a), and the operation is 3n + 1,
     # I want to find the maximum bit of b which is touched by +1.
     # Maybe just compute difference between 3n and 3n + 1?
