@@ -15,3 +15,9 @@ so that there isn't much to gain with a shortcut. Compare such entanglements
 relatively against other entanglements which attempt to maximize the Collatz
 cycle length, so that one can relatively bound them, or aternatively look for
 the maximum Collatz cycle length for k bits using these techniques.
+
+# Maybe paste other ideas from todoist in here too
+
+## Collatz implementation trivial ideas
+
+Write trivial programs for addition, subtraction (?), multiplication and division. Start with base 10, then generalize to any base and then to any digit set for the base multipliers. See if this has any application to 3n + 1 when done, by checking if you can enumerate Collatz in some way by shuffling which operations are performed in sequence. Try to apply Collatz to constituents of a numeric decomposition of a number and see whether it's possible to decompose the Collatz sequence itself, mostly at current point to build a better intuition of what goes on with Collatz sequences.
