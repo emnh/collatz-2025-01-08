@@ -42,7 +42,7 @@ def collatz_cycle_length_aux_test_gen(n, aux):
         yield (n, aux, divs)
         if n % 2 == 0:
             #assert aux % 2 == 0
-            #aux //= 2
+            aux //= 2
             n //= 2
             divs += 1
         else:
@@ -233,12 +233,14 @@ for N in range(1, 2**8):
         continue
     N_clen = collatz_cycle_length(N)
     for cutlen in range(1, len(N_bin)):
-        left_bin, right_bin = N_bin[cutlen:], N_bin[:cutlen]
+        left_bin, right_bin = N_bin[:cutlen], N_bin[cutlen:]
         left = int(left_bin, 2)
+        right = int(right_bin, 2)
+        #print(left_bin, right_bin, N_bin)
+        assert left_bin + right_bin == N_bin
         pad_count = len(right_bin)
         padding = 2 ** pad_count
         left_padded = left * padding
-        right = int(right_bin, 2)
         vals = list(collatz_cycle_length_aux_test_gen(right, left_padded))
         
         last = vals[-1]
