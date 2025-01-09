@@ -1,15 +1,19 @@
 import random
 
+def collatz_step(n):
+    if n % 2 == 0:
+        n //= 2
+    else:
+        n = 3 * n + 1
+    return n
+
 def collatz_cycle_length(n):
     """
     Compute the cycle length of a number n under the Collatz function.
     """
     count = 0
     while n > 1:
-        if n % 2 == 0:
-            n //= 2
-        else:
-            n = 3 * n + 1
+        n = collatz_step(n)
         count += 1
     return count
 
@@ -47,8 +51,8 @@ def collatz_cycle_length_aux_test_gen(n, aux):
     while n > 1:
         yield (n, aux, divs)
         if n % 2 == 0:
-            #assert aux % 2 == 0
-            aux //= 2
+            #assert aux % 2 == 0, aux
+            #aux //= 2
             n //= 2
             #n = n // 2
             divs += 1
@@ -242,53 +246,72 @@ def rightZeroes(x):
             assert False
     return n
 
-for N in range(1, 2**8):
-    N_bin = bin(N)[2:]
-    if N <= 1:
-        continue
-    N_clen = collatz_cycle_length(N)
-    for cutlen in range(2, len(N_bin) - 1):
-        left_bin, right_bin = N_bin[:cutlen], N_bin[cutlen:]
-        left = int(left_bin, 2)
-        right = int(right_bin, 2)
-        #print(left_bin, right_bin, N_bin)
-        assert len(left_bin) > 1
-        assert len(right_bin) > 1
-        assert left_bin + right_bin == N_bin
-        assert len(left_bin) + len(right_bin) == len(N_bin)
-        pad_count = len(right_bin)
-        padding = 2 ** pad_count
-        left_padded = left * padding
-        #zeroes = rightZeroes(left_padded) + 1
-        #zeroes = 
-        #check = bin(left_padded)[2:][:-zeroes] + right_bin == N_bin
-        #if not check:
-        #    print(left_padded, bin(left_padded)[2:][:-zeroes], right_bin, N_bin)
-        #    assert check
-        vals = list(collatz_cycle_length_aux_test_gen(right, left_padded))
-        
-        last = vals[-1]
-        last_aux = last[1]
-        counter = 0
-        print("len(vals)", len(vals))
-        for val in vals:
-            val_N, val_aux, val_divs = val
-            val_divs_2 = 2 ** val_divs
-            if False and val_divs_2 > 0:
-                print("vals", val_aux, val_divs_2)
-                assert val_aux % val_divs_2 == 0
-                val_aux = val_aux // val_divs_2
-            #val_aux_padded = val_aux * padding
-            inner_left, inner_right = val_aux, val_N
-            left_len = len(bin(inner_left)[2:])
-            right_len = len(bin(inner_right)[2:])
-            zeroes_on_left_right = rightZeroes(inner_left)
-            if zeroes_on_left_right >= right_len:
-                counter += 1
-            #if val_N:
-            #if N_clen == 
-            #print(val)
-        #val_N, val_aux, val_divs = last
-        print("N", N, "N_clen", N_clen, "left_bin", left_bin, "right_bin", right_bin, counter, counter)
-    print("")
-        #print("aux", aux, "N", N)
+def main():
+    for N in range(1, 2**8):
+        N_bin = bin(N)[2:]
+        if N <= 1:
+            continue
+        N_clen = collatz_cycle_length(N)
+        for cutlen in range(2, len(N_bin) - 1):
+            left_bin, right_bin = N_bin[:cutlen], N_bin[cutlen:]
+            left = int(left_bin, 2)
+            right = int(right_bin, 2)
+            #print(left_bin, right_bin, N_bin)
+            assert len(left_bin) > 1
+            assert len(right_bin) > 1
+            assert left_bin + right_bin == N_bin
+            assert len(left_bin) + len(right_bin) == len(N_bin)
+            pad_count = len(right_bin)
+            padding = 2 ** pad_count
+            left_padded = left * padding
+            #zeroes = rightZeroes(left_padded) + 1
+            #zeroes = 
+            #check = bin(left_padded)[2:][:-zeroes] + right_bin == N_bin
+            #if not check:
+            #    print(left_padded, bin(left_padded)[2:][:-zeroes], right_bin, N_bin)
+            #    assert check
+            vals = list(collatz_cycle_length_aux_test_gen(right, left_padded))
+            
+            last = vals[-1]
+            last_aux = last[1]
+            counter = 0
+            print("len(vals)", len(vals))
+            for val in vals:
+                val_N, val_aux, val_divs = val
+                val_divs_2 = 2 ** val_divs
+                if False and val_divs_2 > 0:
+                    print("vals", val_aux, val_divs_2)
+                    assert val_aux % val_divs_2 == 0
+                    val_aux = val_aux // val_divs_2
+                #val_aux_padded = val_aux * padding
+                inner_left, inner_right = val_aux, val_N
+                left_len = len(bin(inner_left)[2:])
+                right_len = len(bin(inner_right)[2:])
+                zeroes_on_left_right = rightZeroes(inner_left)
+                if zeroes_on_left_right >= right_len:
+                    counter += 1
+                #if val_N:
+                #if N_clen == 
+                #print(val)
+            #val_N, val_aux, val_divs = last
+            print("N", N, "N_clen", N_clen, "left_bin", left_bin, "right_bin", right_bin, counter, counter)
+        print("")
+            #print("aux", aux, "N", N)
+
+def testSome():
+    k = 10
+    maxLen = 10
+    rs = []
+    num1 = ''
+    for i in range(k):
+        r = random.randint(1, maxLen)
+        rs.append(r)
+        num1 += '0' + '1' * r
+    print("num1 ", num1)
+    inum1 = int(num1, 2)
+    inum2 = collatz_step(inum1)
+    num2 = bin(inum2)[2:]
+    print("num2", num2)
+
+if __name__ == '__main__':
+    testSome()    
