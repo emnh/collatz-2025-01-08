@@ -239,7 +239,7 @@ for N in range(1, 2**8):
         padding = 2 ** pad_count
         left_padded = left * padding
         right = int(right_bin, 2)
-        vals = list(collatz_cycle_length_aux_test_gen(right, left))
+        vals = list(collatz_cycle_length_aux_test_gen(right, left_padded))
         
         last = vals[-1]
         last_aux = last[1]
@@ -247,12 +247,12 @@ for N in range(1, 2**8):
         for val in vals:
             val_N, val_aux, val_divs = val
             val_divs_2 = 2 ** val_divs
-            if val_divs_2 > 0:
+            if False and val_divs_2 > 0:
                 print("vals", val_aux, val_divs_2)
                 assert val_aux % val_divs_2 == 0
                 val_aux = val_aux // val_divs_2
-            val_aux_padded = val_aux * padding
-            inner_left, inner_right = val_N, val_aux
+            #val_aux_padded = val_aux * padding
+            inner_left, inner_right = val_aux, val_N
             left_len = len(bin(inner_left)[2:])
             right_len = len(bin(inner_right)[2:])
             zeroes_on_left_right = rightZeroes(inner_left)
@@ -262,6 +262,6 @@ for N in range(1, 2**8):
             #if N_clen == 
             #print(val)
         #val_N, val_aux, val_divs = last
-        print("N", N, "N_clen", N_clen, "counter", counter)
+        print("N", N, "N_clen", N_clen, "left_bin", left_bin, "right_bin", right_bin, counter, counter)
     print("")
         #print("aux", aux, "N", N)
