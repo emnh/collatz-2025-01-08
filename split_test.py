@@ -7,6 +7,17 @@ def collatz_step(n):
         n = 3 * n + 1
     return n
 
+def collatz_step_bit(n):
+    if n % 2 == 0:
+        n //= 2
+        bit = 0
+    else:
+        on_bits = bin(3 * n)[2:][::-1]
+        n = 3 * n + 1
+        n_bits = bin(n)[2:][::-1]
+        bit = sum([1 if x != y else 0 for x, y in zip(on_bits, n_bits)])
+    return (n, bit)
+
 def collatz_cycle_length(n):
     """
     Compute the cycle length of a number n under the Collatz function.
@@ -298,6 +309,54 @@ def main():
         print("")
             #print("aux", aux, "N", N)
 
+from collatz import truncate_and_count_ones
+from collatz import truncate_and_count_zeroes
+
+def shortcut(n):
+    prefix, one_count = truncate_and_count_ones(n)
+    cycle_length = 0
+    shortcut = ""
+
+    if one_count > 1:
+        # Shortcut calculation for ones
+        n = 3 ** one_count * (prefix // 2) + (3 ** one_count - 1) // 2
+        cycle_length = 2 * one_count + 1
+        shortcut = "ones"
+    else:
+        # Evaluate the zero count of the prefix
+        if prefix == 0:  # Avoid infinite loop on zero prefix
+            n = 1
+            cycle_length += 1
+            return n, cycle_length
+            
+        prefix, prefix_zero_count = truncate_and_count_zeroes(prefix)
+
+        if prefix_zero_count > 1:
+            half_zero_count = prefix_zero_count // 2
+            n = (3 ** half_zero_count) * prefix
+            if prefix_zero_count % 2 == 1:
+                n = n * 4 + 1
+                shortcut = "zeroOdd"
+            else:
+                n = n * 2 + 1
+                shortcut = "zeroEven"
+            cycle_length += 3 * half_zero_count
+
+    return n, cycle_length, shortcut
+
+def pc(inum2, steps, rj, shortfun=lambda x: (x, 0, "")):
+    clen = 0
+    for i in range(steps):
+        bit = 0
+        inum2, clen2, shortcutNumber = shortfun(inum2)
+        if clen2 > 0:
+            clen += clen2
+        else:
+            inum2, bit = collatz_step_bit(inum2)
+            clen += 1
+        num2 = bin(inum2)[2:]
+        print("num2", num2.rjust(rj), str(clen).rjust(3), bit, shortcutNumber)
+    
 def testSome():
     k = 10
     maxLen = 10
@@ -307,11 +366,17 @@ def testSome():
         r = random.randint(1, maxLen)
         rs.append(r)
         num1 += '0' + '1' * r
-    print("num1 ", num1)
+    steps = 10
+    rj = len(num1) + steps + 10
+    print("num1", num1.rjust(rj))
     inum1 = int(num1, 2)
-    inum2 = collatz_step(inum1)
-    num2 = bin(inum2)[2:]
-    print("num2", num2)
+    pc(inum1, steps, rj)
+    print("")
+    #snum1, _ = shortcut(inum1)
+    pc(inum1, steps, rj, shortcut)
+    # For two numbers a, b where b = collatz_step(a), and the operation is 3n + 1,
+    # I want to find the maximum bit of b which is touched by +1.
+    # Maybe just compute difference between 3n and 3n + 1?
 
 if __name__ == '__main__':
-    testSome()    
+    testSome()
