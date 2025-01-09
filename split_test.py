@@ -22,6 +22,25 @@ def collatz_cycle_length_aux_gen(n, aux):
     while n != 1:
         yield (n, aux, divs)
         if n % 2 == 0:
+            assert aux % 2 == 0
+            aux //= 2
+            n //= 2
+            divs += 1
+        else:
+            aux *= 3
+            n = 3 * n + 1
+        count += 1
+    yield (n, aux, divs)
+
+def collatz_cycle_length_aux_test_gen(n, aux):
+    """
+    Compute the cycle length of a number n under the Collatz function.
+    """
+    count = 0
+    divs = 0
+    while n != 1:
+        yield (n, aux, divs)
+        if n % 2 == 0:
             #assert aux % 2 == 0
             #aux //= 2
             n //= 2
@@ -31,6 +50,7 @@ def collatz_cycle_length_aux_gen(n, aux):
             n = 3 * n + 1
         count += 1
     yield (n, aux, divs)
+
 
 def collatz_cycle_length_gen(n):
     """
@@ -128,9 +148,10 @@ def split_test(a, b):
     nfull = int(full, 2)
     if na > 0 and nb > 0 and nfull > 0:
         #na_clen = collatz_cycle_length_aux_gen(na, a)
-        nb_aux = list(collatz_cycle_length_aux_gen(nb, na))
-        nfull_clen = collatz_cycle_length(nfull)
-        a_trans = na * 2 ** (len(full) - len(a))
+        #nb_aux = list(collatz_cycle_length_aux_gen(nb, na))
+        #nfull_clen = collatz_cycle_length(nfull)
+        a_mul = 2 ** (len(full) - len(a))
+        a_trans = na * a_mul
         nfull_aux = collatz_cycle_length_aux_gen(nfull, a_trans)
         #ns1 = list(collatz_cycle_length_aux_gen(nb, a))
         #print("A", a, na, na_clen)
@@ -138,17 +159,20 @@ def split_test(a, b):
         #na_last = nb_aux[-1][1]
         check = True
         for val, aux, divs in nfull_aux:
-            if divs > 0:
-                print("AUX", aux, divs, aux // divs)
+            #if divs > 0:
+            #    print("AUX", aux, divs, aux // divs)
             val_bin = bin(val)[2:]
-            check = val_bin.startswith(a)
+            assert aux % a_mul == 0
+            aux_bin = bin(aux // a_mul)[2:]
+            prefix = aux_bin
+            check = val_bin.startswith(prefix)
             check_count = 0
-            for x, y in zip(val_bin, a):
+            for x, y in zip(val_bin, prefix):
                 if x == y:
                     check_count += 1
                 else:
                     break
-            check_total = str(min(len(val_bin), len(a)))
+            check_total = str(min(len(val_bin), len(prefix)))
             #check2 = val_bin.startswith(b)
             #na_clen = collatz_cycle_length(na * aux * 4)
             #while divs > 0 and na_clen % 2 == 0:
@@ -194,4 +218,50 @@ def test_all(n):
         print("Check", k, v)
     for k, v in no_checks.items():
         print("No check", k, v)
-test_all(2**4)
+#test_all(2**4)
+
+def rightZeroes(x):
+    n = 0
+    while x > 1 and x % 2 == 0:
+        n += 1
+        x //= 2
+    return n
+
+for N in range(1, 2**8):
+    N_bin = bin(N)[2:]
+    if N <= 1:
+        continue
+    N_clen = collatz_cycle_length(N)
+    for cutlen in range(1, len(N_bin)):
+        left_bin, right_bin = N_bin[cutlen:], N_bin[:cutlen]
+        left = int(left_bin, 2)
+        pad_count = len(right_bin)
+        padding = 2 ** pad_count
+        left_padded = left * padding
+        right = int(right_bin, 2)
+        vals = list(collatz_cycle_length_aux_test_gen(right, left))
+        
+        last = vals[-1]
+        last_aux = last[1]
+        counter = 0
+        for val in vals:
+            val_N, val_aux, val_divs = val
+            val_divs_2 = 2 ** val_divs
+            if val_divs_2 > 0:
+                print("vals", val_aux, val_divs_2)
+                assert val_aux % val_divs_2 == 0
+                val_aux = val_aux // val_divs_2
+            val_aux_padded = val_aux * padding
+            inner_left, inner_right = val_N, val_aux
+            left_len = len(bin(inner_left)[2:])
+            right_len = len(bin(inner_right)[2:])
+            zeroes_on_left_right = rightZeroes(inner_left)
+            if zeroes_on_left_right >= right_len:
+                counter += 1
+            #if val_N:
+            #if N_clen == 
+            #print(val)
+        #val_N, val_aux, val_divs = last
+        print("N", N, "N_clen", N_clen, "counter", counter)
+    print("")
+        #print("aux", aux, "N", N)
