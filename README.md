@@ -375,3 +375,7 @@ https://arxiv.org/pdf/2402.00001
 Try to learn about the numerical structure by trying to optimize calculations
 of Collatz over ranges. You may try sum, average, min, max and whatever else
 you come up with.
+
+## Explore various CFG string generation schemes
+
+List some productions to generate binary strings and check how it interacts with Collatz.
