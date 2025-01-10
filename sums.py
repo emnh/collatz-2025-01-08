@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import tabulate
-
+import math
 from collatz import classical_collatz_cycle_length
 
 def to_bin(x):

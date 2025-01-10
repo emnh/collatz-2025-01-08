@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import graphviz
+import math
 
 def to_ternary(n):
     """Convert a number to its ternary representation."""
@@ -33,6 +34,25 @@ def classical_collatz_cycle_length(n, cache={}):
             n //= 2
         else:
             n = 3 * n + 1
+        cycle_length += 1
+    for step in newsteps:
+        cache[step[0]] = cycle_length - step[1]
+    return cycle_length
+
+def classical_collatz_cycle_length_div2(n, cache={}):
+    """Compute the Collatz cycle length for n using the classical method."""
+    cycle_length = 0
+    newsteps = []
+    while n > 1:
+        if n in cache:
+            cycle_length += cache[n]
+            break
+        else:
+            newsteps.append((n, cycle_length))
+        if n % 2 == 0:
+            n //= 2
+        else:
+            n = (3 * n + 1) // 2
         cycle_length += 1
     for step in newsteps:
         cache[step[0]] = cycle_length - step[1]
@@ -232,6 +252,15 @@ if __name__ == "__main__":
     # Specify the maximum bit length you want to analyze
     max_bit_length = 20  # Change this as needed
     max_collatz_by_length(max_bit_length)
+
+    
+    # The positive integer n with the largest currently known value of C, such
+    # that it takes C log n iterations of the 3x + 1 function T(x) to reach 1, is
+    # n = 7, 219, 136, 416, 377, 236, 271, 195 with C ≈ 36.7169 (Roosendaal [79,
+    # 3x + 1 Completeness and Gamma records]).
+    N = 7219136416377236271195
+    clen = classical_collatz_cycle_length_div2(N)
+    print(clen, clen / math.log(N))
 
     # Run the cleaned-up version
     #test_shortcut_vs_classical(2**20)
