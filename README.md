@@ -370,3 +370,8 @@ https://arxiv.org/pdf/2402.00001
 
 [FRACTRAN - Wikipedia](https://en.wikipedia.org/wiki/FRACTRAN)
 
+## Simple Programming Tasks
+
+Try to learn about the numerical structure by trying to optimize calculations
+of Collatz over ranges. You may try sum, average, min, max and whatever else
+you come up with.
