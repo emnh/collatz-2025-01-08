@@ -5,7 +5,7 @@
 #include <cstdint> // For uint128_t
 
 constexpr unsigned int MAX_ITERATIONS = 1024;
-constexpr unsigned int K = 1000000;
+constexpr unsigned int K = 100000000;
 constexpr unsigned int CACHE_SIZE = K;
 constexpr int UNINITIALIZED = -1;
 
@@ -38,6 +38,7 @@ inline std::pair<__uint128_t, int> truncate_and_count_zeroes(__uint128_t n) {
 int convergence_test_iterative(__uint128_t n, const std::vector<__uint128_t>& powers_of_3, int* cache, std::pair<__uint128_t, int>* intermediate) {
     int delay = 0;
     unsigned int iteration_count = 0;
+    __uint128_t n0 = n;
 
     while (n > 1) {
         if (n < CACHE_SIZE && cache[n] != UNINITIALIZED) {
@@ -59,15 +60,16 @@ int convergence_test_iterative(__uint128_t n, const std::vector<__uint128_t>& po
         n = truncated_n2;
         delay += a + b;
 
-        intermediate[iteration_count++] = {n, a + b};
+        // intermediate[iteration_count++] = {n, a + b};
     }
 
-    for (int i = iteration_count - 1; i >= 0; --i) {
-        if (intermediate[i].first < CACHE_SIZE) {
-            cache[intermediate[i].first] = delay;
-        }
-        delay -= intermediate[i].second;
-    }
+    // for (int i = iteration_count - 1; i >= 0; --i) {
+    //     if (intermediate[i].first < CACHE_SIZE) {
+    //         cache[intermediate[i].first] = delay;
+    //     }
+    //     delay -= intermediate[i].second;
+    // }
+    cache[n0] = delay;
 
     return delay;
 }
@@ -93,8 +95,11 @@ int convergence_test_recursive(const __uint128_t n_input, const std::vector<__ui
     const auto [truncated_n2, b] = truncate_and_count_zeroes(n_multiplied);
 
     const int delay = a + b + convergence_test_recursive(truncated_n2, powers_of_3, cache, depth + 1);
-    if (truncated_n2 < CACHE_SIZE) {
-        cache[truncated_n2] = delay;
+    // if (truncated_n2 < CACHE_SIZE) {
+    //     cache[truncated_n2] = delay;
+    // }
+    if (n_input < CACHE_SIZE) {
+        cache[n_input] = delay;
     }
 
     return delay;
@@ -109,8 +114,12 @@ int main() {
     std::fill(cache, cache + CACHE_SIZE, UNINITIALIZED);
     std::pair<__uint128_t, int> intermediate[MAX_ITERATIONS];
 
-    for (unsigned int i = 1; i <= K; ++i) {
-        total_delay += convergence_test_iterative(i, powers_of_3, cache, intermediate);
+    // int a = convergence_test_iterative(27, powers_of_3, cache, intermediate);
+    // std::cout << "check: " << a << std::endl;
+
+    for (unsigned int i = 1; i < K; ++i) {
+        // total_delay += convergence_test_iterative(i, powers_of_3, cache, intermediate);
+        total_delay += convergence_test_recursive(i, powers_of_3, cache);
     }
 
     delete[] cache;
@@ -119,7 +128,10 @@ int main() {
     const std::chrono::duration<double> total_duration = end_total - start_total;
     const double numbers_per_second = K / total_duration.count();
 
-    std::cout << "Checksum (sum of delays): " << static_cast<unsigned long long>(total_delay) << "\n";
+    // std::cout << "                      K = " << K << std::endl;
+    std::cout << "Expected checksum for        K = 1000000: " << 87826377 << std::endl;
+    std::cout << "Expected checksum for        K = 10000000: " << 1037278417 << std::endl;
+    std::cout << "Checksum (sum of delays) for K = " << K << ": " << static_cast<unsigned long long>(total_delay) << "\n";
     std::cout << "Processed " << K << " numbers in " << total_duration.count() << " seconds.\n";
     std::cout << "Processing rate: " << numbers_per_second << " numbers/second.\n";
     std::cout << "Processing rate (log2): " << std::log2(numbers_per_second) << "\n";
