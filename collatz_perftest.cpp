@@ -110,7 +110,7 @@ int main() {
     std::pair<__uint128_t, int> intermediate[MAX_ITERATIONS];
 
     for (unsigned int i = 1; i <= K; ++i) {
-        total_delay += convergence_test_iterative(i, powers_of_3, cache, intermediate);
+        total_delay += convergence_test_recursive(i, powers_of_3, cache, intermediate);
     }
 
     delete[] cache;
