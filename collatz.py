@@ -2,6 +2,83 @@
 
 import graphviz
 import math
+import sys
+
+def collatz_step_T(n):
+    if n % 2 == 0:
+        n //= 2
+    else:
+        n = collatz_step_T1(n + 1) - 1
+        #n = (3 * n + 1) // 2
+    return n
+
+def collatz_step_T1(n):
+    if n % 2 == 0:
+        n = 3 * n // 2
+    else:
+        n = collatz_step_T(n - 1) + 1
+        #n = (n + 1) // 2
+    return n
+
+def convergence_test(n):
+    sequence = [n]
+    delay = 0
+    while n > 1:
+        n = n + 1
+        n, a = truncate_and_count_zeroes(n)
+        n = n * 3 ** a # // 2 ** a
+        n = n - 1
+        n, b = truncate_and_count_zeroes(n)
+        delay += a + b
+        sequence.append(n)
+    sequence.append("delay: " + str(delay))
+    return sequence
+
+def collatz_sequence_mixed(n):
+    sequence = [n]
+    
+    iter = n + 1
+    while n > 4:
+        n = collatz_step_T1(n)
+        n, a = truncate_and_count_zeroes(n)
+        sequence.append(n)
+        #if n > 4:
+        #    n = collatz_step_T1(n)
+        #    n, b = truncate_and_count_zeroes(n)
+        #    sequence.append(n)
+        #if iter % 2 == 0:
+        #    if n % 2 == 0:
+        #        n = n // 2
+        #    else:
+        #        n = collatz_step_T1(n + 1) - 1
+        #else:
+        #    if n % 2 == 0:
+        #        n == 3 * n // 2
+        #    else:
+        #        n = collatz_step_T(n - 1) + 1
+        iter += 1
+    return sequence
+
+def collatz_sequence(n):
+    sequence = [n]
+    while n > 1:
+        if n % 2 == 0:
+            n //= 2
+        else:
+            n = (3 * n + 1) // 2
+        sequence.append(n)
+    return sequence
+
+def collatz_sequence_T1(n):
+    sequence = [n]
+    while n > 4:
+        if n % 2 == 0:
+            n = 3 * n // 2
+        else:
+            n = (n + 1) // 2
+        sequence.append(n)
+    return sequence
+
 
 def to_ternary(n):
     """Convert a number to its ternary representation."""
@@ -107,7 +184,17 @@ def shortcut_collatz_cycle_length_gen(n, cache={}):
 
         if one_count > 1:
             # Shortcut calculation for ones
+            nb = n
+            n4, zero_count3 = truncate_and_count_zeroes(n + 1)
             n = 3 ** one_count * (prefix // 2) + (3 ** one_count - 1) // 2
+            # Seems like it would be possible to divide by 2**one_count possibly
+            n2, zero_count2 = truncate_and_count_zeroes(n)
+            n3 = n2 / (2**(one_count - 1))
+            n5 = (n + 1) * 3 ** zero_count3 / (2 ** zero_count3) - 1
+            n6 = n4 * (3 ** zero_count3) // (2 ** zero_count3) - 1
+            n7, z7 = truncate_and_count_zeroes(n6)
+            print("nb", nb, "n", n, "n2", n2, "n3", n3, "n5", n5, "n6", n6, "n7", n7, "z7", z7, "ones", one_count, "zc2", zero_count2, "zc3", zero_count3)
+            print("n", nb, "to", n, "or", n6, "zeroed", n7, "by x zeroes", z7)
             cycle_length += 2 * one_count + 1
         else:
             # Evaluate the zero count of the prefix
@@ -254,7 +341,18 @@ if __name__ == "__main__":
     # Example Usage
     collatz_sequences = []
     for i in range(1, 2**8):
-        collatz_sequences.append(list(shortcut_collatz_cycle_length_gen(i))[:-2])
+        #seq = list(shortcut_collatz_cycle_length_gen(i))
+        #collatz_sequences.append(seq[:-2])
+        #print(seq)
+        seq1 = collatz_sequence(i)
+        print(str(len(seq1) - 1) + ":", *seq1)
+        seq2 = convergence_test(i)
+        print(str(len(seq2)) + ":", *seq2)
+        seq3 = collatz_sequence_mixed(i)
+        print(str(len(seq3)) + ":", *seq3)
+        print("")
+
+    sys.exit()
     collatz_to_graphviz(collatz_sequences)
 
     # Specify the maximum bit length you want to analyze
