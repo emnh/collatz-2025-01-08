@@ -2,6 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <string>
+#include <unordered_map>
 #include <cstdint> // For uint128_t
 
 // Function to initialize powers of 3 up to 3^64
@@ -37,11 +38,17 @@ std::pair<__uint128_t, int> truncate_and_count_zeroes(__uint128_t n) {
     return {n, count};
 }
 
-// Convergence test function
-int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3) {
+// Convergence test function with caching
+int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3, std::unordered_map<__uint128_t, int>& cache) {
     int delay = 0;
+    std::vector<std::pair<__uint128_t, int>> intermediate;
 
     while (n > 1) {
+        if (cache.find(n) != cache.end()) {
+            delay += cache[n];
+            break;
+        }
+
         n = n + 1;
         auto [truncated_n, a] = truncate_and_count_zeroes(n);
         n = truncated_n;
@@ -53,12 +60,15 @@ int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3)
         n = truncated_n2;
         delay += a + b;
 
-        if (n < static_cast<unsigned long long>(1)) {
-            break;
-        }
+        intermediate.emplace_back(n, a + b);
     }
 
-    return delay;
+    for (const auto& [value, partial_delay] : intermediate) {
+        cache[value] = delay;
+        delay -= partial_delay;
+    }
+
+    return cache[intermediate.front().first];
 }
 
 int main() {
@@ -70,9 +80,10 @@ int main() {
     auto start_total = std::chrono::high_resolution_clock::now();
 
     __uint128_t total_delay = 0;
+    std::unordered_map<__uint128_t, int> cache;
 
     for (unsigned int i = 1; i <= K; ++i) {
-        total_delay += convergence_test(i, powers_of_3);
+        total_delay += convergence_test(i, powers_of_3, cache);
     }
 
     auto end_total = std::chrono::high_resolution_clock::now();
