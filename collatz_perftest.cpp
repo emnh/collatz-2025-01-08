@@ -3,11 +3,50 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint> // For uint128_t
+#include <iomanip> // For std::fixed and std::setprecision
+#include <bitset>
 
 constexpr unsigned int MAX_ITERATIONS = 1024;
-constexpr unsigned int K = 100000000;
+constexpr unsigned int K = 1 << 30;
 constexpr unsigned int CACHE_SIZE = K;
 constexpr int UNINITIALIZED = -1;
+//constexpr __uint128_t BASE_BITS = 20;
+// constexpr unsigned int S_BITS = 30;
+
+// Generate the S table based on the paper's logic for mandatory least significant bits
+std::vector<__uint128_t> generate_S(const __uint128_t BASE_BITS) {
+    std::vector<__uint128_t> S;
+    const __uint128_t max_nL = (__uint128_t) 1 << BASE_BITS;
+
+    for (__uint128_t nL = 0; nL < max_nL; ++nL) {
+        __uint128_t b = (__uint128_t) 1 << BASE_BITS; // Start with b = 2^d
+        __uint128_t c = nL;
+
+        bool mandatory = true;
+        while (b % 2 == 0) {
+            if (b % 2 == 0 and c % 2 == 0) {
+                b /= 2;
+                c /= 2;
+            } else if (c % 2 == 1) {
+                b *= 3;
+                c = 3 * c + 1;
+            }
+            
+            if (b <= ((__uint128_t) 1 << BASE_BITS) - 1) {
+                mandatory = false;
+                break;
+            }
+        }
+
+        if (mandatory) {
+            // std::cout << "S: " << std::bitset<32>(nL) << ": " << b << " " << c << std::endl;
+            S.push_back(nL);
+        }
+    }
+    std::cout << "S size: " << S.size() << std::endl;
+
+    return S;
+}
 
 // Function to initialize powers of 3 up to 3^128
 std::vector<__uint128_t> initialize_powers_of_3() {
@@ -75,7 +114,11 @@ int convergence_test_iterative(__uint128_t n, const std::vector<__uint128_t>& po
 }
 
 // Recursive convergence test function
-int convergence_test_recursive(const __uint128_t n_input, const std::vector<__uint128_t>& powers_of_3, int* cache, int depth = 0) {
+int convergence_test_recursive(const __uint128_t n0_input, const __uint128_t n_input, const std::vector<__uint128_t>& powers_of_3, int* cache, int depth = 0) {
+    if (n_input < n0_input) {
+        return 0;
+    }
+    
     if (n_input < CACHE_SIZE && cache[n_input] != UNINITIALIZED) {
         return cache[n_input];
     }
@@ -94,7 +137,7 @@ int convergence_test_recursive(const __uint128_t n_input, const std::vector<__ui
     const __uint128_t n_multiplied = truncated_n * powers_of_3[a] - 1;
     const auto [truncated_n2, b] = truncate_and_count_zeroes(n_multiplied);
 
-    const int delay = a + b + convergence_test_recursive(truncated_n2, powers_of_3, cache, depth + 1);
+    const int delay = a + b + convergence_test_recursive(n0_input, truncated_n2, powers_of_3, cache, depth + 1);
     // if (truncated_n2 < CACHE_SIZE) {
     //     cache[truncated_n2] = delay;
     // }
@@ -105,8 +148,10 @@ int convergence_test_recursive(const __uint128_t n_input, const std::vector<__ui
     return delay;
 }
 
-int main() {
+int main2(__uint128_t BASE_BITS = 20) {
+    // constexpr unsigned int K = 1 << BASE_BITS;
     const auto powers_of_3 = initialize_powers_of_3();
+    const auto S = generate_S(BASE_BITS);
     const auto start_total = std::chrono::high_resolution_clock::now();
 
     __uint128_t total_delay = 0;
@@ -114,12 +159,19 @@ int main() {
     std::fill(cache, cache + CACHE_SIZE, UNINITIALIZED);
     std::pair<__uint128_t, int> intermediate[MAX_ITERATIONS];
 
-    // int a = convergence_test_iterative(27, powers_of_3, cache, intermediate);
-    // std::cout << "check: " << a << std::endl;
+    // for (unsigned int i = 1; i < K; ++i) {
+    //     // total_delay += convergence_test_iterative(i, powers_of_3, cache, intermediate);
+    //     total_delay += convergence_test_recursive(i, powers_of_3, cache);
+    // }
 
-    for (unsigned int i = 1; i < K; ++i) {
-        // total_delay += convergence_test_iterative(i, powers_of_3, cache, intermediate);
-        total_delay += convergence_test_recursive(i, powers_of_3, cache);
+    // const __uint128_t unskipped_iterations = (K >> BASE_BITS) * (1 >> BASE_BITS);
+    const __uint128_t iterations = (K >> BASE_BITS) * S.size();
+    for (unsigned int mH = 1; mH <= K >> BASE_BITS; ++mH) {
+        for (unsigned int i = 0; i < S.size(); ++i) {
+            const __uint128_t mL = S[i];
+            const __uint128_t n = (static_cast<__uint128_t>(mH) << BASE_BITS) + mL;
+            total_delay += convergence_test_recursive(n, n, powers_of_3, cache);
+        }
     }
 
     delete[] cache;
@@ -132,9 +184,20 @@ int main() {
     std::cout << "Expected checksum for        K = 1000000: " << 87826377 << std::endl;
     std::cout << "Expected checksum for        K = 10000000: " << 1037278417 << std::endl;
     std::cout << "Checksum (sum of delays) for K = " << K << ": " << static_cast<unsigned long long>(total_delay) << "\n";
+    std::cout << "Iterations and fraction: " << (unsigned long long) iterations << " " << std::fixed << std::setprecision(4) << (double) iterations / (double) K << "%" << std::endl;
+    std::cout << std::defaultfloat;
     std::cout << "Processed " << K << " numbers in " << total_duration.count() << " seconds.\n";
     std::cout << "Processing rate: " << numbers_per_second << " numbers/second.\n";
     std::cout << "Processing rate (log2): " << std::log2(numbers_per_second) << "\n";
 
     return 0;
+}
+
+int main() {
+    for (int i = 4; i < 32; i++) {
+    //for (int i = 27; i < 28; i++) {
+        std::cout << "Testing for " << i << " base bits" << std::endl;
+        main2(i);
+        std::cout << std::endl;
+    }
 }
