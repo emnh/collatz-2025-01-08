@@ -242,6 +242,14 @@ def collatz_to_graphviz(sequences, output_file="collatz_graph"):
     graph.render(filename=output_file, cleanup=True)
     print(f"Graph saved to {output_file}.png")
 
+def large_number_test():
+    for i in range(1, 11):
+        N = 2**(10000*i) - 1
+        #clen = classical_collatz_cycle_length(N)
+        #print(clen)
+        clen2 = shortcut_collatz_cycle_length(N)
+        print(i, clen2)
+
 if __name__ == "__main__":
     # Example Usage
     collatz_sequences = []
@@ -253,7 +261,7 @@ if __name__ == "__main__":
     max_bit_length = 20  # Change this as needed
     max_collatz_by_length(max_bit_length)
 
-    
+
     # The positive integer n with the largest currently known value of C, such
     # that it takes C log n iterations of the 3x + 1 function T(x) to reach 1, is
     # n = 7, 219, 136, 416, 377, 236, 271, 195 with C ≈ 36.7169 (Roosendaal [79,
