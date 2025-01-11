@@ -3,3 +3,4 @@
 /*.csv
 /csv
 /collatz_perftest
+/collatz_perftest_parallel
