@@ -6,12 +6,24 @@
 #include <iomanip> // For std::fixed and std::setprecision
 #include <bitset>
 
-constexpr unsigned int MAX_ITERATIONS = 1024;
-constexpr unsigned int K = 1 << 30;
-constexpr unsigned int CACHE_SIZE = K;
+constexpr __uint128_t MAX_ITERATIONS = 1024;
+constexpr __uint128_t K = 1 << 30;
+constexpr __uint128_t CACHE_SIZE = K;
 constexpr int UNINITIALIZED = -1;
 //constexpr __uint128_t BASE_BITS = 20;
 // constexpr unsigned int S_BITS = 30;
+
+std::string uint128_to_string(__uint128_t value) {
+    // Split the 128-bit integer into two 64-bit parts
+    const __uint128_t base = 10;
+    std::string result;
+    do {
+        __uint128_t remainder = value % base;
+        value /= base;
+        result = static_cast<char>('0' + remainder) + result;
+    } while (value != 0);
+    return result;
+}
 
 // Generate the S table based on the paper's logic for mandatory least significant bits
 std::vector<__uint128_t> generate_S(const __uint128_t BASE_BITS) {
@@ -86,7 +98,7 @@ int convergence_test_iterative(__uint128_t n, const std::vector<__uint128_t>& po
         }
 
         if (iteration_count >= MAX_ITERATIONS) {
-            std::cerr << "Error: Exceeded maximum allowed iterations (" << MAX_ITERATIONS << ")\n";
+            std::cerr << "Error: Exceeded maximum allowed iterations (" << uint128_to_string(MAX_ITERATIONS) << ")\n";
             std::exit(EXIT_FAILURE);
         }
 
@@ -124,7 +136,7 @@ int convergence_test_recursive(const __uint128_t n0_input, const __uint128_t n_i
     }
 
     if (depth >= MAX_ITERATIONS) {
-        std::cerr << "Error: Exceeded maximum allowed recursion depth (" << MAX_ITERATIONS << ")\n";
+        std::cerr << "Error: Exceeded maximum allowed recursion depth (" << uint128_to_string(MAX_ITERATIONS) << ")\n";
         std::exit(EXIT_FAILURE);
     }
 
@@ -183,10 +195,10 @@ int main2(__uint128_t BASE_BITS = 20) {
     // std::cout << "                      K = " << K << std::endl;
     std::cout << "Expected checksum for        K = 1000000: " << 87826377 << std::endl;
     std::cout << "Expected checksum for        K = 10000000: " << 1037278417 << std::endl;
-    std::cout << "Checksum (sum of delays) for K = " << K << ": " << static_cast<unsigned long long>(total_delay) << "\n";
-    std::cout << "Iterations and fraction: " << (unsigned long long) iterations << " " << std::fixed << std::setprecision(4) << (double) iterations / (double) K << "%" << std::endl;
+    std::cout << "Checksum (sum of delays) for K = " << uint128_to_string(K) << ": " << static_cast<unsigned long long>(total_delay) << "\n";
+    std::cout << "Iterations and fraction: " << uint128_to_string(iterations) << " " << std::fixed << std::setprecision(4) << (double) iterations / (double) K << "%" << std::endl;
     std::cout << std::defaultfloat;
-    std::cout << "Processed " << K << " numbers in " << total_duration.count() << " seconds.\n";
+    std::cout << "Processed " << uint128_to_string(K) << " numbers in " << total_duration.count() << " seconds.\n";
     std::cout << "Processing rate: " << numbers_per_second << " numbers/second.\n";
     std::cout << "Processing rate (log2): " << std::log2(numbers_per_second) << "\n";
 
