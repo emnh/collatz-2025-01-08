@@ -337,7 +337,19 @@ def large_number_test():
         clen2 = shortcut_collatz_cycle_length(N)
         print(i, clen2)
 
+def csum():
+    s = 0
+    for i in range(1, 1000000):
+        if i % 10000 == 0:
+            print(i)
+        delay = classical_collatz_cycle_length(i)
+        s += delay
+    print("Checksum:", s)
+
 if __name__ == "__main__":
+    csum()
+    sys.exit()
+
     # Example Usage
     collatz_sequences = []
     for i in range(1, 2**8):
@@ -352,7 +364,6 @@ if __name__ == "__main__":
         print(str(len(seq3)) + ":", *seq3)
         print("")
 
-    sys.exit()
     collatz_to_graphviz(collatz_sequences)
 
     # Specify the maximum bit length you want to analyze
