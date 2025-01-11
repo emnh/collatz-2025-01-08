@@ -3,9 +3,10 @@
 #include <chrono>
 #include <string>
 #include <immintrin.h> // For __builtin_ctz
+#include <cstdint> // For uint128_t
 
 // Precomputed powers of 3 up to 3^64
-const unsigned long long POWERS_OF_3[] = {
+const __uint128_t POWERS_OF_3[] = {
     1ULL, 3ULL, 9ULL, 27ULL, 81ULL, 243ULL, 729ULL, 2187ULL,
     6561ULL, 19683ULL, 59049ULL, 177147ULL, 531441ULL, 1594323ULL, 4782969ULL,
     14348907ULL, 43046721ULL, 129140163ULL, 387420489ULL, 1162261467ULL,
@@ -28,16 +29,16 @@ const unsigned long long POWERS_OF_3[] = {
 };
 
 // Function to truncate trailing zeroes and count them in binary
-std::pair<unsigned int, int> truncate_and_count_zeroes(unsigned int n) {
-    int count = __builtin_ctz(n); // Count trailing zeros in binary
+std::pair<__uint128_t, int> truncate_and_count_zeroes(__uint128_t n) {
+    int count = __builtin_ctzll(static_cast<unsigned long long>(n)); // Count trailing zeros in binary
     n >>= count; // Remove trailing zeros
     return {n, count};
 }
 
 // Convergence test function
-std::vector<std::string> convergence_test(unsigned int n) {
+std::vector<std::string> convergence_test(__uint128_t n) {
     std::vector<std::string> sequence;
-    sequence.push_back(std::to_string(n));
+    sequence.push_back(std::to_string(static_cast<unsigned long long>(n)));
     int delay = 0;
 
     while (n > 1) {
@@ -51,9 +52,9 @@ std::vector<std::string> convergence_test(unsigned int n) {
         auto [truncated_n2, b] = truncate_and_count_zeroes(n);
         n = truncated_n2;
         delay += a + b;
-        sequence.push_back(std::to_string(n));
+        sequence.push_back(std::to_string(static_cast<unsigned long long>(n)));
 
-        if (n < std::stoi(sequence.front())) {
+        if (n < static_cast<unsigned long long>(sequence.front()[0] - '0')) {
             break;
         }
     }
@@ -66,6 +67,8 @@ int main() {
     unsigned int K;
     std::cout << "Enter the value of K: ";
     std::cin >> K;
+
+    auto start_total = std::chrono::high_resolution_clock::now();
 
     for (unsigned int i = 1; i <= K; ++i) {
         auto start = std::chrono::high_resolution_clock::now();
@@ -80,6 +83,13 @@ int main() {
         }
         std::cout << "\n\n";
     }
+
+    auto end_total = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> total_duration = end_total - start_total;
+    double numbers_per_second = K / total_duration.count();
+
+    std::cout << "Processed " << K << " numbers in " << total_duration.count() << " seconds.\n";
+    std::cout << "Processing rate: " << numbers_per_second << " numbers/second.\n";
 
     return 0;
 }
