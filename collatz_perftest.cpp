@@ -43,32 +43,38 @@ int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3,
     int delay = 0;
     std::vector<std::pair<__uint128_t, int>> intermediate;
 
-    while (n > 1) {
-        if (cache.find(n) != cache.end()) {
+    __uint128_t n0 = n;
+
+    while (n >= n0 && n > 1) {
+        /*if (cache.find(n) != cache.end()) {
             delay += cache[n];
             break;
-        }
+        }*/
 
         n = n + 1;
         auto [truncated_n, a] = truncate_and_count_zeroes(n);
         n = truncated_n;
-        if (a < 65) {
+        //if (a < 65) {
             n = n * powers_of_3[a];
-        }
+        //}
         n = n - 1;
         auto [truncated_n2, b] = truncate_and_count_zeroes(n);
         n = truncated_n2;
         delay += a + b;
 
-        intermediate.emplace_back(n, a + b);
+        //intermediate.emplace_back(n, a + b);
     }
 
-    for (const auto& [value, partial_delay] : intermediate) {
-        cache[value] = delay;
-        delay -= partial_delay;
-    }
+    // for (const auto& [value, partial_delay] : intermediate) {
+    //     cache[value] = delay;
+    //     delay -= partial_delay;
+    // }
 
-    return cache[intermediate.front().first];
+    // if (!intermediate.empty()) {
+    //     return cache[intermediate.front().first];
+    // }
+
+    return delay;
 }
 
 int main() {
