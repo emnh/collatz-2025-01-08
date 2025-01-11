@@ -2,24 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <string>
-#include <immintrin.h> // For __builtin_ctz
 #include <cstdint> // For uint128_t
-
-int ctz128(__uint128_t value) {
-    if (value == 0) {
-        return 128; // Handle special case: all bits are zero
-    }
-
-    // Extract lower and upper 64 bits
-    uint64_t lower = static_cast<uint64_t>(value);
-    uint64_t upper = static_cast<uint64_t>(value >> 64);
-
-    if (lower != 0) {
-        return __builtin_ctzll(lower); // Count trailing zeros in the lower 64 bits
-    } else {
-        return 64 + __builtin_ctzll(upper); // Count trailing zeros in the upper 64 bits
-    }
-}
 
 // Function to initialize powers of 3 up to 3^64
 std::vector<__uint128_t> initialize_powers_of_3() {
@@ -30,9 +13,26 @@ std::vector<__uint128_t> initialize_powers_of_3() {
     return powers;
 }
 
+// Function to count trailing zeros for 128-bit numbers using built-in ctz for each 64-bit half
+int count_trailing_zeros_128(__uint128_t n) {
+    if (n == 0) return 128;
+    int count = 0;
+
+    uint64_t lower = static_cast<uint64_t>(n);
+    uint64_t upper = static_cast<uint64_t>(n >> 64);
+
+    if (lower != 0) {
+        count = __builtin_ctzll(lower);
+    } else {
+        count = 64 + __builtin_ctzll(upper);
+    }
+
+    return count;
+}
+
 // Function to truncate trailing zeroes and count them in binary
 std::pair<__uint128_t, int> truncate_and_count_zeroes(__uint128_t n) {
-    int count = __builtin_ctzll(static_cast<unsigned long long>(n)); // Count trailing zeros in binary
+    int count = count_trailing_zeros_128(n); // Count trailing zeros in binary
     n >>= count; // Remove trailing zeros
     return {n, count};
 }
@@ -41,9 +41,7 @@ std::pair<__uint128_t, int> truncate_and_count_zeroes(__uint128_t n) {
 int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3) {
     int delay = 0;
 
-    __uint128_t n0 = n;
-
-    while (n > n0) {
+    while (n > 1) {
         n = n + 1;
         auto [truncated_n, a] = truncate_and_count_zeroes(n);
         n = truncated_n;
@@ -54,6 +52,10 @@ int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3)
         auto [truncated_n2, b] = truncate_and_count_zeroes(n);
         n = truncated_n2;
         delay += a + b;
+
+        if (n < static_cast<unsigned long long>(1)) {
+            break;
+        }
     }
 
     return delay;
