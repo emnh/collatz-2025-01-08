@@ -39,6 +39,10 @@ def sum_ranges():
     print(tabulate.tabulate(l, headers=headers))
     print("")
 
+    for clen, i in maxes:
+        print(to_bin(i), clen)
+    print("")
+
     # Checking sums over ranges etc
     l2 = []
     ranges = zip(maxes, maxes[1:])
