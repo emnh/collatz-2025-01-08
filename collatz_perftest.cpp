@@ -5,8 +5,8 @@
 #include <cstdint> // For uint128_t
 
 constexpr unsigned int MAX_ITERATIONS = 1024;
-constexpr unsigned int K = 10000000;
-constexpr unsigned int CACHE_SIZE = 10000000;
+constexpr unsigned int K = 1000000;
+constexpr unsigned int CACHE_SIZE = K;
 constexpr int UNINITIALIZED = -1;
 
 // Function to initialize powers of 3 up to 3^128

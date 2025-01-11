@@ -1,4 +1,5 @@
 /collatz_graph.png
 /__pycache__
 /*.csv
+/csv
 /collatz_perftest
