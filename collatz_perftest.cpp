@@ -1,11 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
-#include <unordered_map>
 #include <cstdint> // For uint128_t
 
 constexpr unsigned int MAX_ITERATIONS = 1024;
 constexpr unsigned int K = 10000000;
+constexpr unsigned int CACHE_SIZE = 10000000;
+constexpr int UNINITIALIZED = -1;
 
 // Function to initialize powers of 3 up to 3^128
 std::vector<__uint128_t> initialize_powers_of_3() {
@@ -33,12 +34,12 @@ inline std::pair<__uint128_t, int> truncate_and_count_zeroes(__uint128_t n) {
 }
 
 // Convergence test function with caching
-int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3, std::unordered_map<__uint128_t, int>& cache, std::pair<__uint128_t, int>* intermediate) {
+int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3, int* cache, std::pair<__uint128_t, int>* intermediate) {
     int delay = 0;
     unsigned int iteration_count = 0;
 
     while (n > 1) {
-        if (cache.find(n) != cache.end()) {
+        if (n < CACHE_SIZE && cache[n] != UNINITIALIZED) {
             delay += cache[n];
             break;
         }
@@ -61,7 +62,9 @@ int convergence_test(__uint128_t n, const std::vector<__uint128_t>& powers_of_3,
     }
 
     for (int i = iteration_count - 1; i >= 0; --i) {
-        cache[intermediate[i].first] = delay;
+        if (intermediate[i].first < CACHE_SIZE) {
+            cache[intermediate[i].first] = delay;
+        }
         delay -= intermediate[i].second;
     }
 
@@ -73,12 +76,15 @@ int main() {
     const auto start_total = std::chrono::high_resolution_clock::now();
 
     __uint128_t total_delay = 0;
-    std::unordered_map<__uint128_t, int> cache;
+    int* cache = new int[CACHE_SIZE];
+    std::fill(cache, cache + CACHE_SIZE, UNINITIALIZED);
     std::pair<__uint128_t, int> intermediate[MAX_ITERATIONS];
 
     for (unsigned int i = 1; i <= K; ++i) {
         total_delay += convergence_test(i, powers_of_3, cache, intermediate);
     }
+
+    delete[] cache;
 
     const auto end_total = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<double> total_duration = end_total - start_total;
