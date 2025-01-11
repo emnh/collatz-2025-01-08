@@ -1,5 +1,11 @@
 # Collatz Experiments
 
+## Resources
+
+- [Convergence verifcation of the Collatz problem, David Barina](https://www.fit.vut.cz/research/publication-file/12315/postprint.pdf)
+- [David Barina's Code](https://github.com/xbarin02/collatz/)
+- [GPU-accelerated Exhaustive Verification of the Collatz Conjecture: Takumi Honda, Yasuaki Ito, and Koji Nakano](http://www.ijnc.org/index.php/ijnc/article/view/135/144)
+
 ## Check out how Collatz can be short-circuited and perhaps bounded when entangled
 
 Divide a binary string into left concat right. And perhaps some playing space
