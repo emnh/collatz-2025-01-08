@@ -27,6 +27,33 @@ the maximum Collatz cycle length for k bits using these techniques.
 
 # Other ideas from my todoist
 
+The general idea is to get creative brainstorming and attack Collatz from as
+many perspectives as possible to build out the intuition around the problem
+to try to grasp why the Conjecture is true or false and then if Eureka hits,
+try to condense it down to a mathematical proof of the intuitive idea. It
+doesn't work with all problems, because the abstract cannot be gained easily
+from the concrete, but I think this problem fits nicely for the approach of
+building out the intuition bottom-up, rather than sitting and playing with
+deductions from a more abstract perspective to understand. The latter is,
+of course, also a valid approach, and probably the chosen path of many, but
+it's not my favourite attack vector. I like to play with the concrete. Then
+when I get tired of it, I might lazily try to eliminate my own work on the
+concrete by abstracting it with formulae.
+
+## Collatz subsequence linear transformations validation
+
+Generate all binary possibilities of Collatz subsequences and narrow down the
+valid ones by calculating the linear transformations and locating them in the
+integers by sliding to the applicable place by monotonicity of the transformation,
+check for valid integers that the subsequence takes from one to another, and then
+for infinitely many insertion points potentially if there is some multiplicative
+generalization or other. Then try to group up sets of subsequences in the generation
+such that we concern ourselves with the valid ones only, and then check if this
+maps out the terrain either in a complete way as towards a proof or at least
+intuitively builds more understanding of the Collatz space to contribute towards
+other ideas. I don't think it's going to lead to a proof, but I might learn
+something.
+
 ## Check what happens with Collatz if adding 1(0*) to the left of a binary number.
 
 ## Natural Numbers Game
