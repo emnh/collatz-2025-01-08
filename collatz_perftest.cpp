@@ -206,8 +206,8 @@ int main2(__uint128_t BASE_BITS = 20) {
 }
 
 int main() {
-    for (int i = 4; i < 32; i++) {
-    //for (int i = 27; i < 28; i++) {
+    //for (int i = 4; i < 32; i++) {
+    for (int i = 31; i < 32; i++) {
         std::cout << "Testing for " << i << " base bits" << std::endl;
         main2(i);
         std::cout << std::endl;
