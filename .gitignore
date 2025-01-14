@@ -4,3 +4,5 @@
 /csv
 /collatz_perftest
 /collatz_perftest_parallel
+/collatz_perftest_updated_64bit
+/log*.txt
