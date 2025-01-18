@@ -182,7 +182,7 @@ int main2(__uint128_t BASE_BITS = 20) {
     int* cache = new int[CACHE_SIZE];
     std::fill(cache, cache + CACHE_SIZE, UNINITIALIZED);
 
-    const __uint128_t num_threads = 6; // Number of processors/logical cores to use
+    const __uint128_t num_threads = 8; // Number of processors/logical cores to use
     const __uint128_t chunk_size = (K >> BASE_BITS) / num_threads;
 
     std::vector<std::thread> threads;
