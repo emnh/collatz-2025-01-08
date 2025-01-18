@@ -4,13 +4,12 @@
 #include <chrono>
 #include <iomanip>
 #include <cstdint>
+#include <cmath>
 
-#define CACHE_SIZE (1ULL << 2)  // 1 GB Cache Size
-#define BASE_BITS 32             // Maximum BASE_BITS for 64-bit numbers
-
-__device__ int count_trailing_zeros_64(uint64_t n) {
-    return (n == 0) ? 64 : __ffsll(n) - 1;
-}
+#define CACHE_SIZE (1ULL << 30)  // 1 GiB Cache Size
+#define BASE_BITS 37             // Set to 37 for larger ranges
+#define CHUNK_SIZE (1ULL << 30)  // 1 GiB of numbers per chunk
+// #define MAX_ITERATIONS 1024
 
 __device__ bool is_mandatory(uint64_t nL, int base_bits) {
     __uint128_t b = static_cast<__uint128_t>(1) << base_bits; // Start with b = 2^BASE_BITS
@@ -32,11 +31,10 @@ __device__ bool is_mandatory(uint64_t nL, int base_bits) {
     return true;
 }
 
-__global__ void generate_S_gpu(uint64_t *S_table, int *valid_count, int base_bits, uint64_t max_nL) {
-    uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= max_nL) return;
+__global__ void generate_S_gpu_chunk(uint64_t *S_table, int *valid_count, uint64_t chunk_start, uint64_t chunk_end, int base_bits) {
+    uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x + chunk_start;
+    if (idx >= chunk_end) return;
 
-    // Check if this `nL` is mandatory
     if (is_mandatory(idx, base_bits)) {
         int pos = atomicAdd(valid_count, 1);
         S_table[pos] = idx;
@@ -45,29 +43,37 @@ __global__ void generate_S_gpu(uint64_t *S_table, int *valid_count, int base_bit
 
 std::vector<uint64_t> generate_S_on_gpu(int base_bits) {
     const uint64_t max_nL = static_cast<uint64_t>(1) << base_bits;
+    const uint64_t chunk_size = CHUNK_SIZE;
 
-    // Host allocations
-    std::vector<uint64_t> S_host(max_nL); // Temporary buffer
-    int valid_count_host = 0;
-
-    // Device allocations
+    std::vector<uint64_t> S_host;
     uint64_t *S_device;
     int *valid_count_device;
-    cudaMalloc(&S_device, max_nL * sizeof(uint64_t));
+    cudaMalloc(&S_device, chunk_size * sizeof(uint64_t)); // Allocate memory for a single chunk
     cudaMalloc(&valid_count_device, sizeof(int));
-    cudaMemset(valid_count_device, 0, sizeof(int));
 
-    // Launch kernel
-    const int threads_per_block = 256;
-    const int num_blocks = (max_nL + threads_per_block - 1) / threads_per_block;
+    for (uint64_t chunk_start = 0; chunk_start < max_nL; chunk_start += chunk_size) {
+        uint64_t chunk_end = std::min(chunk_start + chunk_size, max_nL);
 
-    generate_S_gpu<<<num_blocks, threads_per_block>>>(S_device, valid_count_device, base_bits, max_nL);
-    cudaDeviceSynchronize();
+        // Reset valid count on the device
+        cudaMemset(valid_count_device, 0, sizeof(int));
 
-    // Copy results back to host
-    cudaMemcpy(&valid_count_host, valid_count_device, sizeof(int), cudaMemcpyDeviceToHost);
-    S_host.resize(valid_count_host); // Resize to the actual number of valid entries
-    cudaMemcpy(S_host.data(), S_device, valid_count_host * sizeof(uint64_t), cudaMemcpyDeviceToHost);
+        // Launch kernel
+        const int threads_per_block = 256;
+        const int num_blocks = ((chunk_end - chunk_start) + threads_per_block - 1) / threads_per_block;
+
+        generate_S_gpu_chunk<<<num_blocks, threads_per_block>>>(S_device, valid_count_device, chunk_start, chunk_end, base_bits);
+        cudaDeviceSynchronize();
+
+        // Copy results back to host
+        int valid_count_host = 0;
+        cudaMemcpy(&valid_count_host, valid_count_device, sizeof(int), cudaMemcpyDeviceToHost);
+
+        std::vector<uint64_t> S_chunk(valid_count_host);
+        cudaMemcpy(S_chunk.data(), S_device, valid_count_host * sizeof(uint64_t), cudaMemcpyDeviceToHost);
+
+        // Append chunk results to S_host
+        S_host.insert(S_host.end(), S_chunk.begin(), S_chunk.end());
+    }
 
     // Clean up
     cudaFree(S_device);
@@ -76,10 +82,14 @@ std::vector<uint64_t> generate_S_on_gpu(int base_bits) {
     return S_host;
 }
 
+__device__ int count_trailing_zeros_64(uint64_t n) {
+    return (n == 0) ? 64 : __ffsll(n) - 1;
+}
+
 __global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t *S_table, int S_size, uint64_t n_start, uint64_t max_unfiltered) {
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx >= S_size) return;  // Ensure threads don't exceed the S table size
+    if (idx >= S_size) return;
 
     uint64_t mL = S_table[idx];
     __uint128_t n = (static_cast<__uint128_t>(n_start) << BASE_BITS) + mL;
@@ -127,7 +137,7 @@ void initialize_powers_of_3(uint64_t *powers_of_3_host, int max_power) {
 int main() {
     const int base_bits = BASE_BITS;
 
-    // Generate S table using GPU
+    // Generate S table using GPU in chunks
     auto start_S = std::chrono::high_resolution_clock::now();
     auto S = generate_S_on_gpu(base_bits);
     auto end_S = std::chrono::high_resolution_clock::now();
