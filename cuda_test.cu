@@ -59,6 +59,12 @@ std::vector<uint64_t> generate_S(int base_bits) {
     const uint64_t max_nL = static_cast<uint64_t>(1) << base_bits;
 
     for (uint64_t nL = 0; nL < max_nL; ++nL) {
+        if (nL % (max_nL / 1000) == 0) {
+            std::cout << "Progress: " << std::fixed << std::setprecision(2) << (static_cast<double>(nL) / max_nL) * 100 << "%\r";
+            std::cout << std::defaultfloat;
+            std::cout.flush();
+        }
+
         uint64_t b = static_cast<uint64_t>(1) << base_bits;
         uint64_t c = nL;
 
@@ -82,6 +88,8 @@ std::vector<uint64_t> generate_S(int base_bits) {
             S.push_back(nL);
         }
     }
+    
+    std::cout << std::endl;
 
     std::cout << "S size: " << S.size() << std::endl;
     return S;
