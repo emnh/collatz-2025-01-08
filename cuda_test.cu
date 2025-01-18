@@ -178,20 +178,21 @@ __global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_o
 
         n = n + 1;
         int a = count_trailing_zeros_64(static_cast<uint64_t>(n));
-        if (false && a >= BASE_TABLE_BITS) {
+        // if (a >= BASE_TABLE_BITS) {
+        //if (false) {
             n >>= a;
             n *= powers_of_3[a];
             n = n - 1;
             int b = count_trailing_zeros_64(static_cast<uint64_t>(n));
             n >>= b;
-        } else {
+        // } else {
             const uint64_t mask = (1ULL << BASE_TABLE_BITS) - 1; // Mask for BASE_TABLE_BITS
             const uint64_t nL = n & mask;                           // Extract LSB
             const uint64_t nH = (n >> (64 - BASE_TABLE_BITS)) & mask; // Extract MSB
-            const uint64_t b = B_table[nL];
-            const uint64_t c = C_table[nL];
-            n = b * nH + c;
-        }
+            const uint64_t bT = B_table[nL];
+            const uint64_t cT = C_table[nL];
+            n = bT * nH + cT;
+        // }
         // delay += a + b;
         // iteration_count++;
     }
