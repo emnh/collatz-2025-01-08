@@ -4,11 +4,16 @@
 #include <cstdint>
 #include <iomanip>
 
-#define CACHE_SIZE (1ULL << 30)  // 1 GiB Cache Size
+#define CACHE_SIZE (1ULL << 2)  // 1 GiB Cache Size
 #define BASE_BITS 36             // Set to 37 for larger ranges
 #define CHUNK_SIZE (1ULL << 30)  // 1 GiB of numbers per chunk
-#define NUMBERS_PER_THREAD 2048   // Each thread processes this many numbers
+#define NUMBERS_PER_THREAD 65536   // Each thread processes this many numbers
 #define MAX_ITERATIONS 1024
+
+// Randomization function using an LCG
+__device__ uint64_t randomize(uint64_t idx, uint64_t a, uint64_t c, uint64_t m) {
+    return (a * idx + c) % m;
+}
 
 __device__ bool is_mandatory(uint64_t nL, int base_bits) {
     __uint128_t b = static_cast<__uint128_t>(1) << base_bits; // Start with b = 2^BASE_BITS
@@ -34,7 +39,7 @@ __device__ int count_trailing_zeros_64(uint64_t n) {
     return (n == 0) ? 64 : __ffsll(n) - 1;
 }
 
-__global__ void batched_convergence_test(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t chunk_start, uint64_t chunk_end, int base_bits, unsigned long long *total_processed) {
+__global__ void randomized_convergence_test(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t chunk_start, uint64_t chunk_end, int base_bits, unsigned long long *total_processed, uint64_t a, uint64_t c, uint64_t m) {
     uint64_t thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
     uint64_t start = chunk_start + thread_idx * NUMBERS_PER_THREAD;
     uint64_t end = min(start + NUMBERS_PER_THREAD, chunk_end);
@@ -42,11 +47,14 @@ __global__ void batched_convergence_test(uint64_t *results, uint64_t *powers_of_
     unsigned long long local_processed = 0;
 
     for (uint64_t idx = start; idx < end; ++idx) {
+        // Randomize the number to process
+        uint64_t randomized_idx = randomize(idx, a, c, m);
+
         // Test if the number is mandatory
-        if (!is_mandatory(idx, base_bits)) continue;
+        if (!is_mandatory(randomized_idx, base_bits)) continue;
 
         // Perform convergence test
-        __uint128_t n = idx;
+        __uint128_t n = randomized_idx;
         uint64_t n0 = static_cast<uint64_t>(n);
         int delay = 0;
         unsigned int iteration_count = 0;
@@ -98,6 +106,11 @@ int main() {
     const uint64_t max_nL = static_cast<uint64_t>(1) << base_bits;
     const uint64_t chunk_size = CHUNK_SIZE;
 
+    // LCG parameters
+    const uint64_t a = 6364136223846793005ULL;  // Common multiplier
+    const uint64_t c = 1;                      // Increment (odd)
+    const uint64_t m = max_nL;                 // Modulus (range size)
+
     // Host allocations
     uint64_t *powers_of_3_host = new uint64_t[65];
     int *cache_host = new int[CACHE_SIZE];
@@ -133,7 +146,7 @@ int main() {
         auto start_chunk = std::chrono::high_resolution_clock::now();
 
         // Launch the kernel
-        batched_convergence_test<<<num_blocks, threads_per_block>>>(nullptr, powers_of_3_device, cache_device, chunk_start, chunk_end, base_bits, total_processed_device);
+        randomized_convergence_test<<<num_blocks, threads_per_block>>>(nullptr, powers_of_3_device, cache_device, chunk_start, chunk_end, base_bits, total_processed_device, a, c, m);
         cudaDeviceSynchronize();
 
         auto end_chunk = std::chrono::high_resolution_clock::now();
