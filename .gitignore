@@ -7,4 +7,5 @@
 /collatz_perftest_updated_64bit
 /log*.txt
 /cuda_test
+/cuda_test_no_table
 /errors.txt
