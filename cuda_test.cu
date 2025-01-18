@@ -5,12 +5,41 @@
 #include <iomanip>
 #include <cstdint>
 #include <cmath>
+#include <fstream>
+#include <filesystem> // For file existence check
 
 #define CACHE_SIZE (1ULL << 2)  // 1 GiB Cache Size
 #define BASE_BITS 36 //36             // Set to 37 for larger ranges
 #define BASE_TABLE_BITS 28
 #define CHUNK_SIZE (1ULL << 30)  // 1 GiB of numbers per chunk
 // #define MAX_ITERATIONS 1024
+
+void saveArrayToFile(const std::string& file_path, const uint64_t* h_array, int size) {
+    std::ofstream file(file_path, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error opening file for writing: " << file_path << std::endl;
+        return;
+    }
+    file.write(reinterpret_cast<const char*>(h_array), size * sizeof(uint64_t));
+    file.close();
+    std::cout << "Array saved to " << file_path << std::endl;
+}
+
+bool loadArrayFromFile(const std::string& file_path, uint64_t* h_array, int size) {
+    if (!std::filesystem::exists(file_path)) {
+        return false; // File does not exist
+    }
+
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error opening file for reading: " << file_path << std::endl;
+        return false;
+    }
+    file.read(reinterpret_cast<char*>(h_array), size * sizeof(uint64_t));
+    file.close();
+    std::cout << "Array loaded from " << file_path << std::endl;
+    return true;
+}
 
 std::string uint128_to_string(__uint128_t value) {
     // Split the 128-bit integer into two 64-bit parts
@@ -178,7 +207,7 @@ __device__ __uint128_t method_B(const __uint128_t n, uint64_t *B_table, uint64_t
     return n2;
 }
 
-__global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t *B_table, uint64_t *C_table, uint64_t *S_table, int S_size, uint64_t n_start, uint64_t max_unfiltered) {
+__global__ void convergence_test_iterative(uint64_t* total, uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t *B_table, uint64_t *C_table, uint64_t *S_table, int S_size, uint64_t n_start, uint64_t max_unfiltered) {
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx >= S_size) return;
@@ -188,7 +217,9 @@ __global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_o
 
     uint64_t n0 = static_cast<uint64_t>(n);
     // int delay = 0;
-    // unsigned int iteration_count = 0;
+    uint64_t iteration_count = 0;
+
+
 
     while (n >= n0) {
         // if (n < CACHE_SIZE && cache[static_cast<uint64_t>(n)] != -1) {
@@ -210,7 +241,12 @@ __global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_o
         //         n = n2;
         //     }
         // }
+
+        // iteration_count++;
     }
+
+    // results[idx] = iteration_count;
+    // atomicAdd((unsigned long long *) total, iteration_count);
 
     // if (n0 < CACHE_SIZE) {
     //     cache[n0] = delay;
@@ -265,7 +301,11 @@ int main() {
     uint64_t *S_device;
     uint64_t *B_device;
     uint64_t *C_device;
+    uint64_t* total_device;
+    uint64_t* total_host = new uint64_t[1];
+    total_host[0] = 0;
 
+    cudaMalloc(&total_device, sizeof(uint64_t));
     cudaMalloc(&results_device, S.size() * sizeof(uint64_t));
     cudaMalloc(&powers_of_3_device, 65 * sizeof(uint64_t));
     cudaMalloc(&cache_device, CACHE_SIZE * sizeof(int));
@@ -273,6 +313,7 @@ int main() {
     cudaMalloc(&B_device, BC_size * sizeof(uint64_t));
     cudaMalloc(&C_device, BC_size * sizeof(uint64_t));
 
+    cudaMemcpy(total_device, total_host, sizeof(uint64_t), cudaMemcpyHostToDevice);
     cudaMemcpy(powers_of_3_device, powers_of_3_host, 65 * sizeof(uint64_t), cudaMemcpyHostToDevice);
     cudaMemcpy(cache_device, cache_host, CACHE_SIZE * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(S_device, S.data(), S.size() * sizeof(uint64_t), cudaMemcpyHostToDevice);
@@ -286,13 +327,14 @@ int main() {
     const int threads_per_block = 256;
     const int num_blocks = (S.size() + threads_per_block - 1) / threads_per_block;
 
-    convergence_test_iterative<<<num_blocks, threads_per_block>>>(results_device, powers_of_3_device, cache_device, B_device, C_device, S_device, S.size(), 1, max_unfiltered);
+    convergence_test_iterative<<<num_blocks, threads_per_block>>>(total_device, results_device, powers_of_3_device, cache_device, B_device, C_device, S_device, S.size(), 1, max_unfiltered);
     cudaDeviceSynchronize();
 
     // Stop timing
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
+    cudaMemcpy(total_host, total_device, sizeof(uint64_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(results_host, results_device, S.size() * sizeof(uint64_t), cudaMemcpyDeviceToHost);
 
     // Clean up
@@ -311,6 +353,7 @@ int main() {
               << elapsed.count() << " seconds." << std::endl;
     std::cout << "Processing rate: " << numbers_per_second << " numbers/second." << std::endl;
     std::cout << "Filtered S table size: " << S.size() << std::endl;
+    std::cout << "Average iterations per number: " << (double) total_host[0] / (double) S.size() << std::endl;
 
     return 0;
 }
