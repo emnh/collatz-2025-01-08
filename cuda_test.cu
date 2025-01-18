@@ -7,8 +7,8 @@
 #include <cmath>
 
 #define CACHE_SIZE (1ULL << 2)  // 1 GiB Cache Size
-#define BASE_BITS 36             // Set to 37 for larger ranges
-#define BASE_TABLE_BITS 24
+#define BASE_BITS 36 //36             // Set to 37 for larger ranges
+#define BASE_TABLE_BITS 28
 #define CHUNK_SIZE (1ULL << 30)  // 1 GiB of numbers per chunk
 // #define MAX_ITERATIONS 1024
 
@@ -93,6 +93,10 @@ __device__ bool is_mandatory(uint64_t nL, int base_bits) {
         if (b <= ((static_cast<__uint128_t>(1) << base_bits) - 1)) {
             return false;
         }
+
+        if (b <= ((static_cast<__uint128_t>(1) << base_bits) - 1)) {
+            return false;
+        }
     }
 
     return true;
@@ -153,6 +157,27 @@ __device__ int count_trailing_zeros_64(uint64_t n) {
     return (n == 0) ? 64 : __ffsll(n) - 1;
 }
 
+__device__ __uint128_t method_A(const __uint128_t n, uint64_t *powers_of_3) {
+    const __uint128_t n1 = n + 1;
+    int a = count_trailing_zeros_64(static_cast<uint64_t>(n1));
+    const __uint128_t n2 = n1 >> a;
+    const __uint128_t n3 = powers_of_3[a] * n2;
+    const __uint128_t n4 = n3 - 1;
+    int b = count_trailing_zeros_64(static_cast<uint64_t>(n4));
+    const __uint128_t n5 = n4 >> b;
+    return n5;
+}
+
+__device__ __uint128_t method_B(const __uint128_t n, uint64_t *B_table, uint64_t *C_table) {
+    const __uint128_t mask = (1ULL << BASE_TABLE_BITS) - 1; // Mask for BASE_TABLE_BITS
+    const __uint128_t nL = n & mask;                           // Extract LSB
+    const __uint128_t nH = (n >> (128 - BASE_TABLE_BITS)) & mask; // Extract MSB
+    const __uint128_t bT = B_table[nL];
+    const __uint128_t cT = C_table[nL];
+    const __uint128_t n2 = bT * nH + cT;
+    return n2;
+}
+
 __global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t *B_table, uint64_t *C_table, uint64_t *S_table, int S_size, uint64_t n_start, uint64_t max_unfiltered) {
     uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -176,25 +201,15 @@ __global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_o
         //     break;
         // }
 
-        n = n + 1;
-        int a = count_trailing_zeros_64(static_cast<uint64_t>(n));
-        // if (a >= BASE_TABLE_BITS) {
-        //if (false) {
-            n >>= a;
-            n *= powers_of_3[a];
-            n = n - 1;
-            int b = count_trailing_zeros_64(static_cast<uint64_t>(n));
-            n >>= b;
-        // } else {
-            const uint64_t mask = (1ULL << BASE_TABLE_BITS) - 1; // Mask for BASE_TABLE_BITS
-            const uint64_t nL = n & mask;                           // Extract LSB
-            const uint64_t nH = (n >> (64 - BASE_TABLE_BITS)) & mask; // Extract MSB
-            const uint64_t bT = B_table[nL];
-            const uint64_t cT = C_table[nL];
-            n = bT * nH + cT;
+        n = method_A(n, powers_of_3);
+        // n = method_B(n, B_table, C_table);
+        // if (false) {
+        //     if (n1 < n2) {
+        //         n = n1;
+        //     } else {
+        //         n = n2;
+        //     }
         // }
-        // delay += a + b;
-        // iteration_count++;
     }
 
     // if (n0 < CACHE_SIZE) {
@@ -292,7 +307,7 @@ int main() {
 
     // Output benchmark results
     double numbers_per_second = max_unfiltered / elapsed.count();
-    std::cout << "Processed " << max_unfiltered << " numbers (unfiltered) in "
+    std::cout << "Processed " << (double) max_unfiltered << " numbers (unfiltered) in "
               << elapsed.count() << " seconds." << std::endl;
     std::cout << "Processing rate: " << numbers_per_second << " numbers/second." << std::endl;
     std::cout << "Filtered S table size: " << S.size() << std::endl;
