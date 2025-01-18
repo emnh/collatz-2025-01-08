@@ -5,17 +5,16 @@
 #include <iomanip>
 #include <cstdint>
 
-#define CACHE_SIZE (1 << 20)
-#define MAX_ITERATIONS 1024
-#define BASE_BITS 32
+#define CACHE_SIZE (1ULL << 2)  // 1 GB Cache Size
+#define BASE_BITS 32             // Maximum BASE_BITS for 64-bit numbers
 
 __device__ int count_trailing_zeros_64(uint64_t n) {
     return (n == 0) ? 64 : __ffsll(n) - 1;
 }
 
 __device__ bool is_mandatory(uint64_t nL, int base_bits) {
-    uint64_t b = static_cast<uint64_t>(1) << base_bits; // Start with b = 2^d
-    uint64_t c = nL;
+    __uint128_t b = static_cast<__uint128_t>(1) << base_bits; // Start with b = 2^BASE_BITS
+    __uint128_t c = nL;
 
     while (b % 2 == 0) {
         if (b % 2 == 0 && c % 2 == 0) {
@@ -26,7 +25,7 @@ __device__ bool is_mandatory(uint64_t nL, int base_bits) {
             c = 3 * c + 1;
         }
 
-        if (b <= ((static_cast<uint64_t>(1) << base_bits) - 1)) {
+        if (b <= ((static_cast<__uint128_t>(1) << base_bits) - 1)) {
             return false;
         }
     }
@@ -34,7 +33,7 @@ __device__ bool is_mandatory(uint64_t nL, int base_bits) {
 }
 
 __global__ void generate_S_gpu(uint64_t *S_table, int *valid_count, int base_bits, uint64_t max_nL) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= max_nL) return;
 
     // Check if this `nL` is mandatory
@@ -77,35 +76,35 @@ std::vector<uint64_t> generate_S_on_gpu(int base_bits) {
     return S_host;
 }
 
-__global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t *S_table, int S_size, int n_start, int n_end) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void convergence_test_iterative(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t *S_table, int S_size, uint64_t n_start, uint64_t max_unfiltered) {
+    uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx >= S_size) return;  // Ensure threads don't exceed the S table size
 
     uint64_t mL = S_table[idx];
-    uint64_t n = (static_cast<uint64_t>(n_start) << BASE_BITS) + mL;
+    __uint128_t n = (static_cast<__uint128_t>(n_start) << BASE_BITS) + mL;
 
-    uint64_t n0 = n;
+    uint64_t n0 = static_cast<uint64_t>(n);
     int delay = 0;
     unsigned int iteration_count = 0;
 
     while (n > 1) {
-        if (n < CACHE_SIZE && cache[n] != -1) {
-            delay += cache[n];
+        if (n < CACHE_SIZE && cache[static_cast<uint64_t>(n)] != -1) {
+            delay += cache[static_cast<uint64_t>(n)];
             break;
         }
 
-        if (iteration_count >= MAX_ITERATIONS) {
-            printf("Exceeded maximum iterations\n");
-            break;
-        }
+        // if (iteration_count >= MAX_ITERATIONS) {
+        //     printf("Exceeded maximum iterations\n");
+        //     break;
+        // }
 
         n = n + 1;
-        int a = count_trailing_zeros_64(n);
+        int a = count_trailing_zeros_64(static_cast<uint64_t>(n));
         n >>= a;
         n *= powers_of_3[a];
         n = n - 1;
-        int b = count_trailing_zeros_64(n);
+        int b = count_trailing_zeros_64(static_cast<uint64_t>(n));
         n >>= b;
 
         delay += a + b;
