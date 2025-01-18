@@ -245,11 +245,11 @@ __global__ void convergence_test_iterative(uint64_t* total, uint64_t *results, u
         //     }
         // }
 
-        // iteration_count++;
+        iteration_count++;
     }
 
     // results[idx] = iteration_count;
-    // atomicAdd((unsigned long long *) total, iteration_count);
+    atomicAdd((unsigned long long *) total, iteration_count);
 
     // if (n0 < CACHE_SIZE) {
     //     cache[n0] = delay;
