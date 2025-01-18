@@ -10,35 +10,38 @@
 
 #define CACHE_SIZE (1ULL << 2)  // 1 GiB Cache Size
 #define BASE_BITS 36 //36             // Set to 37 for larger ranges
-#define BASE_TABLE_BITS 28
+#define BASE_TABLE_BITS 24
 #define CHUNK_SIZE (1ULL << 30)  // 1 GiB of numbers per chunk
 // #define MAX_ITERATIONS 1024
 
-void saveArrayToFile(const std::string& file_path, const uint64_t* h_array, int size) {
-    std::ofstream file(file_path, std::ios::binary);
-    if (!file) {
-        std::cerr << "Error opening file for writing: " << file_path << std::endl;
-        return;
-    }
-    file.write(reinterpret_cast<const char*>(h_array), size * sizeof(uint64_t));
-    file.close();
-    std::cout << "Array saved to " << file_path << std::endl;
+// Function to generate a filename based on a numeric variable
+std::string generateFilename(const std::string prefix, const int variable) {
+    return "/dev/shm/array_" + prefix + "_" + std::to_string(variable) + ".bin";
 }
 
-bool loadArrayFromFile(const std::string& file_path, uint64_t* h_array, int size) {
-    if (!std::filesystem::exists(file_path)) {
-        return false; // File does not exist
+// Function to save an array to a file
+void saveArrayToFile(const std::string& filename, const std::vector<uint64_t>& array) {
+    std::ofstream outFile(filename, std::ios::binary);
+    if (!outFile) {
+        std::cerr << "Error opening file for writing: " << filename << std::endl;
+        return;
     }
+    outFile.write(reinterpret_cast<const char*>(array.data()), array.size() * sizeof(uint64_t));
+}
 
-    std::ifstream file(file_path, std::ios::binary);
-    if (!file) {
-        std::cerr << "Error opening file for reading: " << file_path << std::endl;
-        return false;
+// Function to load an array from a file
+std::vector<uint64_t> loadArrayFromFile(const std::string& filename) {
+    std::ifstream inFile(filename, std::ios::binary | std::ios::ate);
+    if (!inFile) {
+        std::cerr << "Error opening file for reading: " << filename << std::endl;
+        return {};
     }
-    file.read(reinterpret_cast<char*>(h_array), size * sizeof(uint64_t));
-    file.close();
-    std::cout << "Array loaded from " << file_path << std::endl;
-    return true;
+    std::streamsize size = inFile.tellg();
+    inFile.seekg(0, std::ios::beg);
+
+    std::vector<uint64_t> array(size / sizeof(uint64_t));
+    inFile.read(reinterpret_cast<char*>(array.data()), size);
+    return array;
 }
 
 std::string uint128_to_string(__uint128_t value) {
@@ -269,7 +272,22 @@ int main() {
     uint64_t* B_table = new uint64_t[BC_size];
     uint64_t* C_table = new uint64_t[BC_size];
     auto start_S = std::chrono::high_resolution_clock::now();
-    auto S = generate_S_on_gpu(base_bits);
+    
+    // Generate a filename based on the numeric variable
+    std::string filename = generateFilename("S_table", base_bits);
+    std::vector<uint64_t> S;
+    // Check if the file exists
+    if (std::filesystem::exists(filename)) {
+        // Load the array from the file
+        std::vector<uint64_t> loadedArray = loadArrayFromFile(filename);
+        S = loadedArray;
+        std::cout << "Loaded S table with size: " << S.size() << " from file." << std::endl;
+    } else {
+        S = generate_S_on_gpu(base_bits);
+        // Save the array to a file
+        saveArrayToFile(filename, S);
+    }
+
     auto end_S = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_S = end_S - start_S;
 
@@ -277,7 +295,22 @@ int main() {
               << elapsed_S.count() << " seconds." << std::endl;
 
     auto start_BC = std::chrono::high_resolution_clock::now();
-    fill_table(B_table, C_table, BASE_TABLE_BITS);
+    std::string B_filename = generateFilename("B_table", BASE_TABLE_BITS);
+    std::string C_filename = generateFilename("C_table", BASE_TABLE_BITS);
+    // Check if the file exists
+    if (std::filesystem::exists(B_filename) && std::filesystem::exists(C_filename)) {
+        // Load the arrays from the files
+        std::vector<uint64_t> loadedBArray = loadArrayFromFile(B_filename);
+        std::vector<uint64_t> loadedCArray = loadArrayFromFile(C_filename);
+        std::copy(loadedBArray.begin(), loadedBArray.end(), B_table);
+        std::copy(loadedCArray.begin(), loadedCArray.end(), C_table);
+        std::cout << "Loaded BC tables with size: " << BC_size << " from files." << std::endl;
+    } else {
+        fill_table(B_table, C_table, BASE_TABLE_BITS);
+        // Save the arrays to files
+        saveArrayToFile(B_filename, std::vector<uint64_t>(B_table, B_table + BC_size));
+        saveArrayToFile(C_filename, std::vector<uint64_t>(C_table, C_table + BC_size));
+    }
     auto end_BC = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_BC = end_BC - start_BC;
 
