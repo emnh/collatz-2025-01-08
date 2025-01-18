@@ -5,8 +5,9 @@
 #include <iomanip>
 
 #define CACHE_SIZE (1ULL << 30)  // 1 GiB Cache Size
-#define BASE_BITS 34             // Set to 37 for larger ranges
+#define BASE_BITS 36             // Set to 37 for larger ranges
 #define CHUNK_SIZE (1ULL << 30)  // 1 GiB of numbers per chunk
+#define NUMBERS_PER_THREAD 2048   // Each thread processes this many numbers
 #define MAX_ITERATIONS 1024
 
 __device__ bool is_mandatory(uint64_t nL, int base_bits) {
@@ -33,48 +34,56 @@ __device__ int count_trailing_zeros_64(uint64_t n) {
     return (n == 0) ? 64 : __ffsll(n) - 1;
 }
 
-__global__ void direct_convergence_test(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t chunk_start, uint64_t chunk_end, int base_bits, unsigned long long *total_processed) {
-    uint64_t idx = blockIdx.x * blockDim.x + threadIdx.x + chunk_start;
-    if (idx >= chunk_end) return;
+__global__ void batched_convergence_test(uint64_t *results, uint64_t *powers_of_3, int *cache, uint64_t chunk_start, uint64_t chunk_end, int base_bits, unsigned long long *total_processed) {
+    uint64_t thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t start = chunk_start + thread_idx * NUMBERS_PER_THREAD;
+    uint64_t end = min(start + NUMBERS_PER_THREAD, chunk_end);
 
-    // Test if the number is mandatory
-    if (!is_mandatory(idx, base_bits)) return;
+    unsigned long long local_processed = 0;
 
-    // Perform convergence test
-    __uint128_t n = idx;
-    uint64_t n0 = static_cast<uint64_t>(n);
-    int delay = 0;
-    unsigned int iteration_count = 0;
+    for (uint64_t idx = start; idx < end; ++idx) {
+        // Test if the number is mandatory
+        if (!is_mandatory(idx, base_bits)) continue;
 
-    while (n > 1) {
-        if (n < CACHE_SIZE && cache[static_cast<uint64_t>(n)] != -1) {
-            delay += cache[static_cast<uint64_t>(n)];
-            break;
+        // Perform convergence test
+        __uint128_t n = idx;
+        uint64_t n0 = static_cast<uint64_t>(n);
+        int delay = 0;
+        unsigned int iteration_count = 0;
+
+        while (n > 1) {
+            if (n < CACHE_SIZE && cache[static_cast<uint64_t>(n)] != -1) {
+                delay += cache[static_cast<uint64_t>(n)];
+                break;
+            }
+
+            if (iteration_count >= MAX_ITERATIONS) {
+                printf("Exceeded maximum iterations\n");
+                break;
+            }
+
+            n = n + 1;
+            int a = count_trailing_zeros_64(static_cast<uint64_t>(n));
+            n >>= a;
+            n *= powers_of_3[a];
+            n = n - 1;
+            int b = count_trailing_zeros_64(static_cast<uint64_t>(n));
+            n >>= b;
+
+            delay += a + b;
+            iteration_count++;
         }
 
-        if (iteration_count >= MAX_ITERATIONS) {
-            printf("Exceeded maximum iterations\n");
-            break;
+        if (n0 < CACHE_SIZE) {
+            cache[n0] = delay;
         }
 
-        n = n + 1;
-        int a = count_trailing_zeros_64(static_cast<uint64_t>(n));
-        n >>= a;
-        n *= powers_of_3[a];
-        n = n - 1;
-        int b = count_trailing_zeros_64(static_cast<uint64_t>(n));
-        n >>= b;
-
-        delay += a + b;
-        iteration_count++;
+        // Increment local processed count
+        local_processed++;
     }
 
-    if (n0 < CACHE_SIZE) {
-        cache[n0] = delay;
-    }
-
-    // Increment the total processed count
-    atomicAdd(total_processed, 1);
+    // Update total processed count atomically
+    atomicAdd(total_processed, local_processed);
 }
 
 void initialize_powers_of_3(uint64_t *powers_of_3_host, int max_power) {
@@ -118,13 +127,13 @@ int main() {
         uint64_t chunk_end = std::min(chunk_start + chunk_size, max_nL);
 
         const int threads_per_block = 256;
-        const int num_blocks = ((chunk_end - chunk_start) + threads_per_block - 1) / threads_per_block;
+        const int num_blocks = ((chunk_end - chunk_start) / NUMBERS_PER_THREAD + threads_per_block - 1) / threads_per_block;
 
         // Timer for chunk processing
         auto start_chunk = std::chrono::high_resolution_clock::now();
 
         // Launch the kernel
-        direct_convergence_test<<<num_blocks, threads_per_block>>>(nullptr, powers_of_3_device, cache_device, chunk_start, chunk_end, base_bits, total_processed_device);
+        batched_convergence_test<<<num_blocks, threads_per_block>>>(nullptr, powers_of_3_device, cache_device, chunk_start, chunk_end, base_bits, total_processed_device);
         cudaDeviceSynchronize();
 
         auto end_chunk = std::chrono::high_resolution_clock::now();
