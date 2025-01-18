@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cuda_runtime.h>
+#include <cstdint>
 
 #define CACHE_SIZE (1 << 20) // Example cache size
 #define MAX_ITERATIONS 1024

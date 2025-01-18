@@ -6,3 +6,5 @@
 /collatz_perftest_parallel
 /collatz_perftest_updated_64bit
 /log*.txt
+/cuda_test
+/errors.txt
