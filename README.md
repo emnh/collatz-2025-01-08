@@ -7,6 +7,8 @@
 - [David Barina's Code](https://github.com/xbarin02/collatz/)
 - [GPU-accelerated Exhaustive Verification of the Collatz Conjecture: Takumi Honda, Yasuaki Ito, and Koji Nakano](http://www.ijnc.org/index.php/ijnc/article/view/135/144)
 - [Eric Rosendaal's Page of Collatz Records](http://www.ericr.nl/wondrous/)
+- [Almost all orbits of an analogue of the Collatz map on the reals attain bounded values](https://arxiv.org/abs/2401.17241)
+- [An Automated Approach to the Collatz Conjecture](https://arxiv.org/abs/2105.14697)
 
 http://www.ericr.nl/wondrous/
 ## Check out how Collatz can be short-circuited and perhaps bounded when entangled
