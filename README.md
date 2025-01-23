@@ -9,6 +9,7 @@
 - [Eric Rosendaal's Page of Collatz Records](http://www.ericr.nl/wondrous/)
 - [Almost all orbits of an analogue of the Collatz map on the reals attain bounded values](https://arxiv.org/abs/2401.17241)
 - [An Automated Approach to the Collatz Conjecture](https://arxiv.org/abs/2105.14697)
+- [Almost All Orbits of the Collatz Map attain almost bounded values](https://arxiv.org/pdf/1909.03562)
 
 http://www.ericr.nl/wondrous/
 ## Check out how Collatz can be short-circuited and perhaps bounded when entangled
