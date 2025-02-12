@@ -76,6 +76,8 @@ what goes on with Collatz sequences.
 
 ## Investigate Collatz Conjecture aka 3n + 1 problem
 
+## Check what happens with Collatz if adding 1(0*) to the left of a binary number.
+
 ## Write down lots of 3n+1 tasks under the relevant section, including completed, incomplete and wild ideas.
 
 ## Read [The Collatz conjecture, Littlewood-Offord theory, and powers of 2 and 3](https://terrytao.wordpress.com/2011/08/25/the-collatz-conjecture-littlewood-offord-theory-and-powers-of-2-and-3/)
